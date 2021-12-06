@@ -1,0 +1,84 @@
+{
+  "name": "osu-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "ts-node-dev --respawn --transpile-only --poll ./src/index.ts",
+    "lint": "prettier --write .",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@commitlint/cli": "^15.0.0",
+    "@commitlint/config-angular": "^15.0.0",
+    "@types/glob": "^7",
+    "@types/module-alias": "^2",
+    "@types/node": "^16.11.11",
+    "husky": "^7.0.4",
+    "lint-staged": "^12.1.2",
+    "prettier": "^2.5.1",
+    "ts-node": "^10.4.0",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.5.2"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn dlx @yarnpkg/doctor && lint-staged",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "lint-staged": {
+    "*.ts": "prettier --write",
+    "*.js": "prettier --write"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-angular"
+    ],
+    "rules": {
+      "scope-case": [
+        2,
+        "always",
+        "pascal-case"
+      ],
+      "type-enum": [
+        2,
+        "always",
+        [
+          "chore",
+          "build",
+          "ci",
+          "docs",
+          "feat",
+          "fix",
+          "perf",
+          "refactor",
+          "revert",
+          "style",
+          "test"
+        ]
+      ]
+    }
+  },
+  "dependencies": {
+    "axios": "^0.24.0",
+    "chart.js": "^3.6.2",
+    "chartjs-node-canvas": "^4.1.5",
+    "consola": "^2.15.3",
+    "discord.js": "^13.3.1",
+    "dotenv": "^10.0.0",
+    "glob": "^7.2.0",
+    "module-alias": "^2.2.2"
+  },
+  "_moduleAliases": {
+    "@bot": "src/bot",
+    "@functions": "src/functions",
+    "@interfaces": "src/interfaces",
+    "@prestart": "src/prestart",
+    "@database": "src/database",
+    "@osuapi": "src/api/osu"
+  }
+}
