@@ -1,28 +1,29 @@
 import { Message, MessageAttachment, MessageOptions } from "discord.js"
-import { OsuApi } from "@osuapi/index"
-import { ParseArgs, parsedArgs } from "@functions/utils"
-import { GetUser } from "@database/users"
+import { GetOsuProfile, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
 import { OsuGraph } from "@functions/canvasUtils"
+import { ErrorCodes, ErrorHandles } from "@functions/errors"
+import { OsuProfile } from "@osuapi/endpoints/profile"
 
 const replaysGraph = async (userId: string, {Name}: parsedArgs): Promise<MessageOptions> => {
-    const user = await GetUser(userId)
-    
-    const profileOptions = {id: Name[0], mode: 0 as const, self: false, token: undefined}
-    if (user?.osu?.token) profileOptions.token = `Bearer ${user.osu.token}`
-    if (Name?.length == 0)
-        if (user?.osu?.token) {
-            profileOptions.self = true
-        }
-    const profile = await OsuApi.Profile.FromId(profileOptions)
+    const [profile, err] = await HandlePromise<OsuProfile>(GetOsuProfile(userId, Name))
+    if (err) {
+        if (err.error == ErrorCodes.ProfileNotLinked) return ErrorHandles.ProfileNotLinked()
+        return ErrorHandles.Unknown(err)
+    }
     const buffer = await OsuGraph(profile.ReplaysWatched.map(e => e.count), {reverse:false})
     return {files: [new MessageAttachment(buffer, "watched_replays.png")]}
 }
 
-export const messageCallback = async (message: Message, args: string[]) => {
+const messageCallback = async (message: Message, args: string[]) => {
     const params = ParseArgs(args)
     const msg = await replaysGraph(message.author.id, params)
     msg.allowedMentions = {repliedUser: false}
     message.reply(msg)
 }
 
-export const name = ["watchedreplays", "wr"]
+const name = ["watchedreplays", "wr"]
+
+export const messageCommand = {
+    name: name,
+    callback: messageCallback
+}

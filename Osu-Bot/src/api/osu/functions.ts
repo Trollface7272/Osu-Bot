@@ -21,3 +21,12 @@ export const Post = async (link: string, data: any, headers: any={}) => {
         }
     })).data
 }
+
+export const HandlePromise = async <T>(promise: Promise<any>): Promise<[T, any]> => {
+    try {
+        const res = await promise
+        return [res, null]
+    } catch (err) {
+        return [null, err]
+    }
+}

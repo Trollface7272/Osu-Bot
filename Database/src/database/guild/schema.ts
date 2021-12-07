@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import { model, Schema } from "mongoose";
 
 
 export const GuildSchema = new Schema({
@@ -8,3 +8,5 @@ export const GuildSchema = new Schema({
     messages: Number,
     commands: Number
 })
+
+export const GuildModel = model("guild", GuildSchema)

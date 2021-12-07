@@ -10,7 +10,8 @@ export const callback = async (_: Client, message: Message) => {
     let args = message.content.toLowerCase().split(" ")
     const command = args.shift().substring(prefix.length)
     args = parseArgs(args)
-    const callback = (message.client as Client).commands.get(command)?.messageCallback
+    const callback = (message.client as Client).commands.get(command)?.callback
+    
     
     if (!callback) return
     callback(message, args)

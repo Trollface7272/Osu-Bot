@@ -1,9 +1,17 @@
-import { interactionCallback as Link } from "@bot/commands/link";
-import { Message } from "discord.js";
+import { ApplicationCommandData, CommandInteraction, Message } from "discord.js"
 
-export interface iCommand {
+export interface iMessageCommand {
     name: string
-    messageCallback: (message: Message, args: string[]) => void
+    callback: (message: Message, args: string[]) => void
 }
 
-export const callback = Link
+export interface iInteractionCommand {
+    name: string
+    data: ApplicationCommandData
+    callback: (interaction: CommandInteraction) => void
+}
+
+export interface iCommandFile {
+    messageCommand: iMessageCommand
+    interactionCommand: iInteractionCommand
+}
