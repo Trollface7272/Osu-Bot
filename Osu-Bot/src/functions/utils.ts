@@ -36,12 +36,11 @@ export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0|1|2|
     let user: iUser|void = await GetUser(userId)
     
     const profileOptions = {id: Name[0], mode: Mode, self: false, token: undefined}
-    if (user?.osu?.token) profileOptions.token = `Bearer ${user.osu.token}`
     if (Name?.length == 0)
         if (user?.osu?.token) {
             profileOptions.self = true
+            profileOptions.token = `Bearer ${user.osu.token}`
         }
-    console.log(user);
     
     if (!profileOptions.self && Name?.length == 0) throw { error: ErrorCodes.ProfileNotLinked }
     if (profileOptions.token && user.osu.expireDate.getTime() < Date.now()) user = await RefreshToken(user._id)
