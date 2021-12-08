@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import axios, { AxiosError } from "axios"
 import { SetOsuToken } from "../database/users";
 import { join } from "path";
+import logger from "../functions/logger";
 
 const router = Router()
 const paths = {
@@ -19,11 +20,10 @@ router.get("/", async (req: Request, res: Response) => {
         code,
         grant_type: "authorization_code"
     }).catch((err: AxiosError) => {
-        console.log(err)
+        logger.Error(err)
         return
     })
     if (!resp) return res.status(200).sendFile(paths.fail)
-    console.log(resp.data);
     
     const rawData = resp.data
     const data = {

@@ -1,11 +1,12 @@
 import { connect } from "mongoose"
+import logger from "../functions/logger"
 
 
 
 export const Connect = async () => {
-    console.log(`Connecting to database`)
+    logger.Info(`Connecting to database`)
     await connect(process.env.MONGO, {
         keepAlive: true
     })
-    console.log(`Connected to database`)    
+    logger.Info(`Connected to database`)    
 }
