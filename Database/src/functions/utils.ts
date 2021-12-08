@@ -1,6 +1,6 @@
 import axios from "axios"
 import { NextFunction, Request, Response } from "express"
-import { GetUser, RefreshOsuToken, SetOsuToken } from "../database/users"
+import { GetUser, RefreshOsuToken } from "../database/users"
 import logger from "./logger"
 
 export const ValidateSecret = (req: Request, res: Response, next: NextFunction) => {

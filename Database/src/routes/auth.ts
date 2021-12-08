@@ -23,7 +23,8 @@ router.get("/", async (req: Request, res: Response) => {
         return
     })
     if (!resp) return res.status(200).sendFile(paths.fail)
-
+    console.log(resp.data);
+    
     const rawData = resp.data
     const data = {
         tokenType: rawData.token_type,
