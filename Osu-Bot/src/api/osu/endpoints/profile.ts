@@ -169,6 +169,7 @@ class ApiProfile {
         const endpoint = self ? `${v2ApiLink}/me${mode != undefined ? "/" + GameModes[mode] : ""}` : `${v2ApiLink}/users/${id}${mode != undefined ? "/" + GameModes[mode] : ""}`
         console.log(endpoint)        
         let data: iUserRaw = (await Get(endpoint, {}, { Authorization: token || this.Token }))
+        console.log(data)        
         return new Profile(data)
     }
 }
