@@ -1,24 +1,26 @@
-import axios from "axios"
+import axios, { Axios, AxiosRequestConfig, AxiosRequestHeaders } from "axios"
 
-export const Get = async (link: string, data: any, headers: any={}) => {
+export const Get = async (link: string, data: any, headers: any={}, axiosOptions?: AxiosRequestConfig) => {
     return (await axios.get(link, {
         params: data,
         headers: {
             "Content-Type": "application/json",
             "Accept": "application/json",
             ...headers
-        }
+        },
+        ...axiosOptions
     })).data
     
 }
 
-export const Post = async (link: string, data: any, headers: any={}) => {
+export const Post = async (link: string, data: any, headers: any={}, axiosOptions?: AxiosRequestConfig) => {
     return (await axios.post(link, data, {
         headers: {
             "Content-Type": "application/json",
             "Accept": "application/json",
             ...headers
-        }
+        },
+        ...axiosOptions
     })).data
 }
 

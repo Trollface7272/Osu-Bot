@@ -1,6 +1,9 @@
 import { GetUser, RefreshToken } from "@database/users"
 import { iUser } from "@interfaces/database";
+import { OsuProfile } from "@osuapi/endpoints/profile";
+import { Errors } from "@osuapi/error";
 import { OsuApi } from "@osuapi/index"
+import { MessageEmbed, MessageOptions } from "discord.js";
 import { ErrorCodes } from "./errors";
 import logger from "./logger";
 
@@ -32,7 +35,7 @@ export const GetOsuToken = async (discordId: string, discordName: string) => {
     return data.osu.token
 }
 
-export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0|1|2|3) => {
+export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0|1|2|3): Promise<OsuProfile|MessageOptions> => {
     let user: iUser|void = await GetUser(userId)
     
     const profileOptions = {id: Name[0], mode: Mode, self: false, token: undefined}
@@ -45,7 +48,27 @@ export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0|1|2|
     if (!profileOptions.self && Name?.length == 0) throw { error: ErrorCodes.ProfileNotLinked }
     if (profileOptions.token && user.osu.expireDate.getTime() < Date.now()) user = await RefreshToken(user._id)
     if (!user) throw { error: ErrorCodes.ProfileNotLinked }
-    const profile = await OsuApi.Profile.FromId(profileOptions)
+    const [profile, err] = await HandlePromise(OsuApi.Profile.FromId(profileOptions))
+    if (err) {
+        const resp = new MessageEmbed().setColor("RANDOM")
+        switch(err.code) {
+            case Errors.BadToken:
+                throw {
+                    embeds: [resp.setDescription("Please relink your profile.")]
+                }
+            case Errors.PlayerDoesNotExist: 
+                throw {
+                    embeds: [resp.setDescription("Player does not exist.")]
+                }
+            case Errors.WrongEndpoint:
+            case Errors.Unknown:
+                logger.Error(err)
+                throw {
+                    embeds: [resp.setDescription("Unknown error occured")]
+                }
+        }
+        
+    }
     return profile
 }
 

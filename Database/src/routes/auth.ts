@@ -32,7 +32,8 @@ router.get("/", async (req: Request, res: Response) => {
         token: rawData.access_token,
         refresh: rawData.refresh_token
     }
-
+    console.log(data);
+    
     SetOsuToken(state as string, data, req.headers["cf-connecting-ip"] as string)
     res.status(200).sendFile(paths.success)
 })
