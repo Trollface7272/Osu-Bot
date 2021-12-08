@@ -23,7 +23,7 @@ export const RefreshToken = async (userId: string) => {
     const rawData = resp.data
     const data = {
         tokenType: rawData.token_type,
-        expireDate: new Date(rawData.expires_in + Date.now()),
+        expireDate: new Date(rawData.expires_in * 1000 + Date.now()),
         token: rawData.access_token,
         refresh: rawData.refresh_token
     }
