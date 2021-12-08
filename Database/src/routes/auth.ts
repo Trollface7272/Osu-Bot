@@ -28,7 +28,7 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     SetOsuToken(state as string, data, req.headers["cf-connecting-ip"] as string)
-    res.send("<script>close()</script>")
+    res.send("<script>javascript:window.close('','_parent','');</script>")
 })
 
 export default router
