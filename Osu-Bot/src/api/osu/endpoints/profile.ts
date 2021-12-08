@@ -88,7 +88,8 @@ export class OsuProfile {
     public get Country() {
         return {
             code: this.raw.country_code,
-            name: this.raw.country.name
+            name: this.raw.country.name,
+            flag: `https://flagcdn.com/w80/${this.raw.country_code.toLowerCase()}.png`
         }
     }
     public get Group() { return this.raw.default_group }
@@ -152,8 +153,8 @@ export class OsuProfile {
     public get ProfileUrl() { return "https://osu.ppy.sh/u/" + this.raw.id }
     public get Rank() {
         return {
-            Global: this.raw.statistics.rank.global,
-            Country: this.raw.statistics.rank.country
+            Global: this.raw.statistics.global_rank,
+            Country: this.raw.statistics.country_rank
         }
     }
     public get Level() {
@@ -183,7 +184,7 @@ export class OsuProfile {
     public get PlayCount() { return this.raw.statistics.play_count }
     public get MaxCombo() { return this.raw.statistics.maximum_combo }
     public get ReplayViews() { return this.raw.statistics.replays_watched_by_others }
-
+    public get PlayTime() { return this.raw.statistics.play_time }
 
     constructor(data: iUserRaw) {
         const {

@@ -13,12 +13,14 @@ const Profile = async (member: GuildMember, {Name, Gamemode}: parsedArgs): Promi
     const embed = new MessageEmbed()
         .setColor("RANDOM")
         .setThumbnail(profile.Avatar)
-        .setURL(profile.ProfileUrl)
-        .setAuthor(`${GamemodeNames[Gamemode]} Profile for ${profile.Username}`)
+        .setAuthor(`${GamemodeNames[Gamemode]} Profile for ${profile.Username}`, profile.Country.flag, profile.ProfileUrl)
         .setDescription(
 `\
-**Rank:** #${profile.Rank.Global} (#${profile.Rank.Country}${profile.Country.code})
-**Level:** ${profile}
+▸ **Rank:** #${profile.Rank.Global.toLocaleString()} (${profile.Country.code}#${profile.Rank.Country.toLocaleString()})
+▸ **Level:** ${profile.Level.Current} (${profile.Level.Progress}%)
+▸ **Performance:** ${profile.Performance.toLocaleString()}pp
+▸ **Accuracy:** ${Math.round(profile.Accuracy * 100) / 100}%
+▸ **Playcount:** ${profile.PlayCount} (${Math.round(profile.PlayTime/60/60)} hours)\
 `
         )
     return {
