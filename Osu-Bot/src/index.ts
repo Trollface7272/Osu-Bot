@@ -6,4 +6,5 @@ import Client from "@bot/client"
 
 config()
 
-new Client().Start(process.env.DISCORD)
+export const client = new Client()
+client.Start(process.env.DISCORD)

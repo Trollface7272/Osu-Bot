@@ -2,9 +2,9 @@ import { Request, Response, Router } from "express";
 import axios from "axios"
 import { SetOsuToken } from "../database/users";
 
-export const AuthRouter = Router()
+const router = Router()
 //https://osu.ppy.sh/oauth/authorize?redirect_uri=http://localhost:727/auth&response_type=code&client_id=11234&state=290850421487042560
-AuthRouter.get("/", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
     const { state, code } = req.query
     const resp = (await axios.post("https://osu.ppy.sh/oauth/token", {
         client_id: process.env.OSUID,
@@ -20,6 +20,8 @@ AuthRouter.get("/", async (req: Request, res: Response) => {
         refresh: resp.refresh_token
     }
 
-    SetOsuToken(state as string, data)
+    SetOsuToken(state as string, data, req.headers["cf-connecting-ip"] as string)
     res.send("<script>close()</script>")
 })
+
+export default router

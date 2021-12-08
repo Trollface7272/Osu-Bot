@@ -8,7 +8,7 @@ export const callback = (_: Client, interaction: Interaction) => {
 const commandInteraction = (interaction: CommandInteraction) => {
     console.log(interaction.commandName, (interaction.client as Client).interactions);
     
-    (interaction.client as Client).interactions.get(interaction.commandName).interactionCallback(interaction)
+    (interaction.client as Client).interactions.get(interaction.commandName).callback(interaction)
 }
 
 export const name = "interactionCreate"

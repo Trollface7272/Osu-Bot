@@ -18,14 +18,12 @@ export const GetUser = async ({ userId, name }: { userId: string, name?: string 
     const response = await collection.findOne<iUser>({
         _id: userId
     })
-    console.log(response);
-    
     if (!response) return CreateUser({ userId, name: name || "" })
     return response
 }
 
-export const SetOsuToken = async (key: string, data: { token: string, refresh: string, expireDate: Date, tokenType: string }) => {
-    collection.updateOne({ osutempsecret: key }, { $set: { osu: data } })
+export const SetOsuToken = async (key: string, data: { token: string, refresh: string, expireDate: Date, tokenType: string }, ip: string) => {
+    collection.updateOne({ osutempsecret: key }, { $set: { osu: data, ip } })
 }
 
 export const onMessage = (userId: string, isCommand: boolean) => {

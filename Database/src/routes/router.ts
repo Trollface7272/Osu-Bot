@@ -1,7 +1,9 @@
 import { Router } from "express"
-import { AuthRouter } from "./auth"
+import auth from "./auth"
 import users from "./users"
+import guilds from "./guilds"
 export const router = Router()
 
 router.use("/users", users)
-router.use("/auth", AuthRouter)
+router.use("/guilds", guilds)
+router.use("/auth", auth)

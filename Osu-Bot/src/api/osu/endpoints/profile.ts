@@ -1,8 +1,10 @@
 import { iUserAccountHistoryRaw, iUserAchievementRaw, iUserBannerRaw, iUserCountryRaw, iUserMonthlyPlaycountRaw, iUserPageRaw, iUserRankHistoryRaw, iUserRaw, iUserReplaysWatchedRaw } from "../types/profile"
 import { GameModes, v2ApiLink } from "../consts"
 import { GameMode, ProfilePage } from "../types/api_enums"
-import { Get } from "../functions"
+import { Get, HandlePromise } from "../functions"
 import logger from "@functions/logger"
+import { AxiosError } from "axios"
+import { Errors, OsuApiError } from "@osuapi/error"
 
 class ApiResponse {
     public avatar_url: string
@@ -74,7 +76,7 @@ class ApiResponse {
     public user_preferences: unknown
 }
 
-class Profile {
+export class OsuProfile {
     public raw: ApiResponse
 
 
@@ -168,9 +170,14 @@ class ApiProfile {
     public async FromId({id, mode, token, self}: apiOptions) {
         const endpoint = self ? `${v2ApiLink}/me${mode != undefined ? "/" + GameModes[mode] : ""}` : `${v2ApiLink}/users/${id}${mode != undefined ? "/" + GameModes[mode] : ""}`
         console.log(endpoint)        
-        let data: iUserRaw = (await Get(endpoint, {}, { Authorization: token || this.Token }))
-        console.log(data)        
-        return new Profile(data)
+        const [data, err]: [iUserRaw, AxiosError] = await HandlePromise<iUserRaw>(Get(endpoint, {}, { Authorization: token || this.Token }))
+        if (err) {
+            if (err.response.status == 403) throw new OsuApiError(Errors.BadToken)
+            if (err.response.status == 404) throw new OsuApiError(Errors.WrongEndpoint)
+            throw new OsuApiError(Errors.Unknown)
+        }
+        if (!data) throw new OsuApiError(Errors.PlayerDoesNotExist)
+        return new OsuProfile(data)
     }
 }
 

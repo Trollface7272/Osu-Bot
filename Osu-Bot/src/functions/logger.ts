@@ -1,7 +1,9 @@
 import consola from "consola"
+import { MessageEmbed, TextChannel } from "discord.js"
 
 consola.wrapAll()
-
+let logChannel: TextChannel
+export const SetLogChannel = (channel: TextChannel) => logChannel = channel
 const Log = (...messages: any[]) => {
     console.log(...messages)
 }
@@ -16,6 +18,12 @@ const Info = (...messages: any[]) => {
 
 const Error = (...messages: any[]) => {
     console.error(...messages)
+    logChannel?.send({
+        embeds: [new MessageEmbed({
+            color: "RANDOM",
+            description: messages.join("\n")
+        })]
+    })
 }
 
 
