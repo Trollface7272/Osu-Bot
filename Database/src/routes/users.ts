@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response, Router } from "express"
 import { addTempKey, GetUser, onMessage } from "../database/users"
 import { ValidateSecret } from "../functions"
+import { onMessage as gOnMessage } from "../database/guild"
 
 const router = Router()
 
@@ -18,6 +19,7 @@ router.post("/onmessage", (req: Request, res: Response) => {
     if (userId == null || isCommand == null || guildId == null) return res.status(400).send()
 
     onMessage(userId, isCommand)
+    gOnMessage(guildId, isCommand)
     res.status(200).send()
 })
 

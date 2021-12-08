@@ -22,3 +22,8 @@ export const GetGuild = async (guildId: string) => {
 export const SetGuildName = async (guildId: string, name: string) => {
     collection.updateOne({ _id: guildId }, { $set: { name } })
 }
+
+export const onMessage = async (guildId: string, isCommand: boolean) => {
+    let inc = isCommand ? { messages: 1, commands: 1 } : { messages: 1 }
+    const updated = await collection.updateOne({ _id: guildId }, { $inc: inc })
+}
