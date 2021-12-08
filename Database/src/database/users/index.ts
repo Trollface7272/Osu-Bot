@@ -1,4 +1,5 @@
 import { connection, model } from "mongoose"
+import logger from "../../functions/logger"
 import { iUser } from "./interfaces"
 import { UserModel, UserSchema } from "./schema"
 const collection = connection.collection("users")
@@ -23,7 +24,12 @@ export const GetUser = async ({ userId, name }: { userId: string, name?: string 
 }
 
 export const SetOsuToken = async (key: string, data: { token: string, refresh: string, expireDate: Date, tokenType: string }, ip: string) => {
-    collection.updateOne({ osutempsecret: key }, { $set: { osu: data, ip } })
+    logger.Log(data)
+    collection.updateOne({ osutempsecret: key }, { $set: { osu: data, ip }, $unset: {osutempsecret: ""} })
+}
+
+export const RefreshOsuToken = async (userId: string, data: { token: string, refresh: string, expireDate: Date, tokenType: string }) => {
+    collection.updateOne({ userId }, { $set: { osu: data } })
 }
 
 export const onMessage = async (userId: string, isCommand: boolean) => {

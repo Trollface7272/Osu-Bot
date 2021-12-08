@@ -4,8 +4,8 @@ import { OsuGraph } from "@functions/canvasUtils"
 import { OsuProfile } from "@osuapi/endpoints/profile"
 import { ErrorCodes, ErrorHandles } from "@functions/errors"
 
-const playcountGraph = async (userId: string, {Name}: parsedArgs): Promise<MessageOptions> => {
-    const [profile, err] = await HandlePromise<OsuProfile>(GetOsuProfile(userId, Name))
+const playcountGraph = async (userId: string, {Name, Gamemode}: parsedArgs): Promise<MessageOptions> => {
+    const [profile, err] = await HandlePromise<OsuProfile>(GetOsuProfile(userId, Name, Gamemode))
     if (err) {
         if (err.error == ErrorCodes.ProfileNotLinked) return ErrorHandles.ProfileNotLinked()
         return ErrorHandles.Unknown(err)

@@ -1,4 +1,4 @@
-import { iUserAccountHistoryRaw, iUserAchievementRaw, iUserBannerRaw, iUserCountryRaw, iUserMonthlyPlaycountRaw, iUserPageRaw, iUserRankHistoryRaw, iUserRaw, iUserReplaysWatchedRaw } from "../types/profile"
+import { iUserAccountHistoryRaw, iUserAchievementRaw, iUserBannerRaw, iUserCountryRaw, iUserMonthlyPlaycountRaw, iUserPageRaw, iUserRankHistoryRaw, iUserRaw, iUserReplaysWatchedRaw, iUserStatisticsRaw } from "../types/profile"
 import { GameModes, v2ApiLink } from "../consts"
 import { GameMode, ProfilePage } from "../types/api_enums"
 import { Get, HandlePromise } from "../functions"
@@ -42,16 +42,16 @@ class ApiResponse {
     public title_url: string | null
     //TODO
     public account_history: iUserAccountHistoryRaw[]
-    public active_tournament_banner: iUserBannerRaw|null
+    public active_tournament_banner: iUserBannerRaw | null
     //TODO
     public badges: unknown[]
     public beatmap_playcounts_count: number
-    public blocks: unknown|undefined
+    public blocks: unknown | undefined
     //TODO
     public cover: unknown
     public favourite_beatmapset_count: number
     public follower_count: number
-    public friends: unknown[]|undefined
+    public friends: unknown[] | undefined
     public graveyard_beatmapset_count: number
     public groups: unknown[]
     public loved_beatmapset_count: number
@@ -66,10 +66,10 @@ class ApiResponse {
     public scores_first_count: number
     public scores_recent_count: number
     //TODO
-    public statistics: unknown
+    public statistics: iUserStatisticsRaw
     //TODO
     public statistics_rulesets: unknown
-    public support_level: 0|1|2|3
+    public support_level: 0 | 1 | 2 | 3
     public unread_pm_count: number
     public user_achievements: iUserAchievementRaw[]
     //TODO
@@ -85,21 +85,25 @@ export class OsuProfile {
 
 
     public get Avatar() { return this.raw.avatar_url }
-    public get Country() { return {
-        code: this.raw.country_code,
-        name: this.raw.country.name
-    } }
+    public get Country() {
+        return {
+            code: this.raw.country_code,
+            name: this.raw.country.name
+        }
+    }
     public get Group() { return this.raw.default_group }
     public get id() { return this.raw.id }
-    public get is() { return {
-        bot: this.raw.is_bot,
-        restricted: this.raw.is_restricted,
-        deleted: this.raw.is_deleted,
-        supporter: this.raw.is_supporter,
-        online: this.raw.is_online,
-        active: this.raw.is_active,
-        
-    }}
+    public get is() {
+        return {
+            bot: this.raw.is_bot,
+            restricted: this.raw.is_restricted,
+            deleted: this.raw.is_deleted,
+            supporter: this.raw.is_supporter,
+            online: this.raw.is_online,
+            active: this.raw.is_active,
+            ranked: this.raw.statistics.is_ranked
+        }
+    }
     public get LastVisit() { return this.raw.last_visit }
     public get PmFriendsOnly() { return this.raw.pm_friends_only }
     public get ProfileColor() { return this.raw.profile_colour }
@@ -122,29 +126,63 @@ export class OsuProfile {
     public get ProfileOrder() { return this.raw.profile_order }
     public get Title() { return this.raw.title }
     public get TitleUrl() { return this.raw.title_url }
-    public get AccountHistory() { return this.raw.account_history}
-    public get Badges() { return this.raw.badges}
-    public get PlayedBeatmaps() { return this.raw.beatmap_playcounts_count}
-    public get Blocks() { return this.raw.blocks}
-    public get FavouriteBeatmaps() { return this.raw.favourite_beatmapset_count}
-    public get Followers() { return this.raw.follower_count}
-    public get Friends() { return this.raw.friends}
-    public get GraveyardBeatmaps() { return this.raw.graveyard_beatmapset_count}
-    public get Groups() { return this.raw.groups}
-    public get LovedBeatmaps() { return this.raw.loved_beatmapset_count}
-    public get MonthlyPlaycounts() { return this.raw.monthly_playcounts}
-    public get Page() { return this.raw.page}
-    public get PendingBeatmaps() { return this.raw.pending_beatmapset_count}
-    public get PreviousUsernames() { return this.raw.previous_usernames}
-    public get RankHistory() { return this.raw.rank_history}
-    public get RankedBeatmaps() { return this.raw.ranked_beatmapset_count}
-    public get ReplaysWatched() { return this.raw.replays_watched_counts}
-    public get TopPlays() { return this.raw.scores_best_count}
-    public get FirstPlaces() { return this.raw.scores_first_count}
-    public get RecentScores() { return this.raw.scores_recent_count}
-    public get SupportLevel() { return this.raw.support_level}
-    public get UnreadPmCount() { return this.raw.unread_pm_count}
-    public get UserAchievements() { return this.raw.user_achievements}
+    public get AccountHistory() { return this.raw.account_history }
+    public get Badges() { return this.raw.badges }
+    public get PlayedBeatmaps() { return this.raw.beatmap_playcounts_count }
+    public get Blocks() { return this.raw.blocks }
+    public get FavouriteBeatmaps() { return this.raw.favourite_beatmapset_count }
+    public get Followers() { return this.raw.follower_count }
+    public get Friends() { return this.raw.friends }
+    public get GraveyardBeatmaps() { return this.raw.graveyard_beatmapset_count }
+    public get Groups() { return this.raw.groups }
+    public get LovedBeatmaps() { return this.raw.loved_beatmapset_count }
+    public get MonthlyPlaycounts() { return this.raw.monthly_playcounts }
+    public get Page() { return this.raw.page }
+    public get PendingBeatmaps() { return this.raw.pending_beatmapset_count }
+    public get PreviousUsernames() { return this.raw.previous_usernames }
+    public get RankHistory() { return this.raw.rank_history }
+    public get RankedBeatmaps() { return this.raw.ranked_beatmapset_count }
+    public get ReplaysWatched() { return this.raw.replays_watched_counts }
+    public get TopPlays() { return this.raw.scores_best_count }
+    public get FirstPlaces() { return this.raw.scores_first_count }
+    public get RecentScores() { return this.raw.scores_recent_count }
+    public get SupportLevel() { return this.raw.support_level }
+    public get UnreadPmCount() { return this.raw.unread_pm_count }
+    public get UserAchievements() { return this.raw.user_achievements }
+    public get ProfileUrl() { return "https://osu.ppy.sh/u/" + this.raw.id }
+    public get Rank() {
+        return {
+            Global: this.raw.statistics.rank.global,
+            Country: this.raw.statistics.rank.country
+        }
+    }
+    public get Level() {
+        return {
+            Current: this.raw.statistics.level.current,
+            Progress: this.raw.statistics.level.progress
+        }
+    }
+    public get Performance() { return this.raw.statistics.pp }
+    public get Score() {
+        return {
+            Ranked: this.raw.statistics.ranked_score,
+            Total: this.raw.statistics.total_score,
+            Hits: this.raw.statistics.total_hits
+        }
+    }
+    public get Grades() {
+        return {
+            s: this.raw.statistics.grade_counts.s,
+            a: this.raw.statistics.grade_counts.a,
+            sh: this.raw.statistics.grade_counts.sh,
+            ss: this.raw.statistics.grade_counts.ss,
+            ssh: this.raw.statistics.grade_counts.ssh,
+        }
+    }
+    public get Accuracy() { return this.raw.statistics.hit_accuracy }
+    public get PlayCount() { return this.raw.statistics.play_count }
+    public get MaxCombo() { return this.raw.statistics.maximum_combo }
+    public get ReplayViews() { return this.raw.statistics.replays_watched_by_others }
 
 
     constructor(data: iUserRaw) {
@@ -152,7 +190,7 @@ export class OsuProfile {
             avatar_url, country_code, default_group, is_bot, is_active, is_deleted, is_online, is_supporter, is_restricted, last_visit, cover_url, has_supported, id, join_date, kudosu, max_blocks, max_friends, playmode, playstyle, pm_friends_only, post_count, profile_colour, profile_order, username, country, discord, interests, location, occupation, title, title_url, twitter, website, account_history, active_tournament_banner, badges, beatmap_playcounts_count, blocks, cover, favourite_beatmapset_count, follower_count, friends, graveyard_beatmapset_count, groups, loved_beatmapset_count, monthly_playcounts, page, pending_beatmapset_count, previous_usernames, rank_history, ranked_beatmapset_count, replays_watched_counts, scores_best_count, scores_first_count, scores_recent_count, statistics, statistics_rulesets, support_level, unread_pm_count, user_achievements, user_preferences
         } = data
         const d = {
-            avatar_url, country_code, default_group, is_bot, is_active, is_deleted, is_online, is_supporter, is_restricted, last_visit: new Date(last_visit || 0), cover_url, has_supported, id, join_date: new Date(join_date || 0), kudosu, max_blocks, max_friends, playmode, playstyle, pm_friends_only, post_count, profile_colour, profile_order, username, country, discord, interests, location, occupation, title, title_url, twitter, website,account_history, active_tournament_banner, badges, beatmap_playcounts_count, blocks, cover, favourite_beatmapset_count, follower_count, friends, graveyard_beatmapset_count, groups, loved_beatmapset_count, monthly_playcounts, page, pending_beatmapset_count, previous_usernames, rank_history, ranked_beatmapset_count, replays_watched_counts, scores_best_count, scores_first_count, scores_recent_count, statistics, statistics_rulesets, support_level, unread_pm_count, user_achievements, user_preferences
+            avatar_url, country_code, default_group, is_bot, is_active, is_deleted, is_online, is_supporter, is_restricted, last_visit: new Date(last_visit || 0), cover_url, has_supported, id, join_date: new Date(join_date || 0), kudosu, max_blocks, max_friends, playmode, playstyle, pm_friends_only, post_count, profile_colour, profile_order, username, country, discord, interests, location, occupation, title, title_url, twitter, website, account_history, active_tournament_banner, badges, beatmap_playcounts_count, blocks, cover, favourite_beatmapset_count, follower_count, friends, graveyard_beatmapset_count, groups, loved_beatmapset_count, monthly_playcounts, page, pending_beatmapset_count, previous_usernames, rank_history, ranked_beatmapset_count, replays_watched_counts, scores_best_count, scores_first_count, scores_recent_count, statistics, statistics_rulesets, support_level, unread_pm_count, user_achievements, user_preferences
         }
         this.raw = d
     }
@@ -167,19 +205,19 @@ class ApiProfile {
         this.Token = key
     }
 
-    public async FromId({id, mode, token, self}: apiOptions) {
+    public async FromId({ id, mode, token, self }: apiOptions) {
         const gamemode = mode != undefined ? "/" + GameModes[mode] : ""
         const endpoint = self ?
-            `${v2ApiLink}/me${gamemode}` : 
+            `${v2ApiLink}/me${gamemode}` :
             `${v2ApiLink}/users/${id}${gamemode}`
-        console.log(endpoint)        
+        console.log(endpoint)
         const [data, err]: [iUserRaw, AxiosError] = await HandlePromise<iUserRaw>(Get(endpoint, {}, { Authorization: token || this.Token }))
         if (err) {
-            if (err.response.status == 403) throw new OsuApiError(Errors.BadToken)
-            if (err.response.status == 404) throw new OsuApiError(Errors.WrongEndpoint)
-            throw new OsuApiError(Errors.Unknown)
+            if (err.response.status == 403) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+            if (err.response.status == 404) throw new OsuApiError(Errors.WrongEndpoint, "Provided invalid api endpoint")
+            throw new OsuApiError(Errors.Unknown, err)
         }
-        if (!data) throw new OsuApiError(Errors.PlayerDoesNotExist)
+        if (!data) throw new OsuApiError(Errors.PlayerDoesNotExist, "Selecred player does not exist")
         return new OsuProfile(data)
     }
 }

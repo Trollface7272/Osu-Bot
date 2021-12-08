@@ -81,6 +81,7 @@
     "@interfaces": "src/interfaces",
     "@prestart": "src/prestart",
     "@database": "src/database",
-    "@osuapi": "src/api/osu"
+    "@osuapi": "src/api/osu",
+    "@consts": "src/consts"
   }
 }

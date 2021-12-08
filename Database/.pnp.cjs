@@ -43,6 +43,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@types/node", "npm:16.11.11"],
             ["axios", "npm:0.24.0"],
             ["body-parser", "npm:1.19.0"],
+            ["consola", "npm:2.15.3"],
             ["dotenv", "npm:10.0.0"],
             ["express", "npm:4.17.1"],
             ["husky", "npm:7.0.4"],
@@ -1157,6 +1158,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD",
         }]
       ]],
+      ["consola", [
+        ["npm:2.15.3", {
+          "packageLocation": "./.yarn/cache/consola-npm-2.15.3-7b4cf44fed-8ef7a09b70.zip/node_modules/consola/",
+          "packageDependencies": [
+            ["consola", "npm:2.15.3"]
+          ],
+          "linkType": "HARD",
+        }]
+      ]],
       ["console-control-strings", [
         ["npm:1.1.0", {
           "packageLocation": "./.yarn/cache/console-control-strings-npm-1.1.0-e3160e5275-8755d76787.zip/node_modules/console-control-strings/",
@@ -1286,6 +1296,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@types/node", "npm:16.11.11"],
             ["axios", "npm:0.24.0"],
             ["body-parser", "npm:1.19.0"],
+            ["consola", "npm:2.15.3"],
             ["dotenv", "npm:10.0.0"],
             ["express", "npm:4.17.1"],
             ["husky", "npm:7.0.4"],

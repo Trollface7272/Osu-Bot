@@ -1,6 +1,6 @@
 import { Request, Response, Router } from "express"
 import { GetGuild, SetGuildName } from "../database/guild"
-import { ValidateSecret } from "../functions"
+import { ValidateSecret } from "../functions/utils"
 
 const router = Router()
 

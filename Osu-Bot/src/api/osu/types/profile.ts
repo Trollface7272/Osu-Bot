@@ -57,9 +57,13 @@ export interface iUserRaw extends iUserCompactRaw {
     interests?: string
     join_date: string
     kudosu: {
-        total: number,
+        total: number
         available: number
     },
+    rank: {
+        global: number
+        country: number
+    }
     location?: string
     max_blocks: number
     max_friends: number
@@ -154,6 +158,7 @@ export interface iUserGradesRaw {
 
 export interface iUserRankRaw { 
     country: number
+    global: number
 }
 
 export interface iUserAchievementRaw {

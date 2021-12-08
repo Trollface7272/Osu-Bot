@@ -7,5 +7,6 @@ export enum Errors {
 
 export class OsuApiError {
     public code: Errors
-    constructor(code: Errors) { this.code = code }
+    public message: any
+    constructor(code: Errors, message: any) { this.code = code, this.message = message }
 }

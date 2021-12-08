@@ -1,12 +1,14 @@
 import { GetPrefix } from "@database/guild"
 import { Message } from "discord.js"
 import Client from "@bot/client"
+import { OnMessage } from "@database/users"
 
 export const callback = async (_: Client, message: Message) => {
     if (message.author.bot) return
-    const prefix = await GetPrefix(message.guildId)
-    if (!message.content.startsWith(prefix)) return
-
+    const prefix = process.env.NODE_ENV == "development" ? "-" : await GetPrefix(message.guildId)
+    if (!message.content.startsWith(prefix)) return OnMessage(message.author.id, message.guildId, false)
+    OnMessage(message.author.id, message.guildId, true)
+    
     let args = message.content.toLowerCase().split(" ")
     const command = args.shift().substring(prefix.length)
     args = parseArgs(args)

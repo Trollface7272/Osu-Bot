@@ -4,20 +4,20 @@ import { OsuGraph } from "@functions/canvasUtils"
 import { ErrorCodes, ErrorHandles } from "@functions/errors"
 import { OsuProfile } from "@osuapi/endpoints/profile"
 
-const replaysGraph = async (userId: string, {Name}: parsedArgs): Promise<MessageOptions> => {
-    const [profile, err] = await HandlePromise<OsuProfile>(GetOsuProfile(userId, Name))
+const replaysGraph = async (userId: string, { Name, Gamemode }: parsedArgs): Promise<MessageOptions> => {
+    const [profile, err] = await HandlePromise<OsuProfile>(GetOsuProfile(userId, Name, Gamemode))
     if (err) {
         if (err.error == ErrorCodes.ProfileNotLinked) return ErrorHandles.ProfileNotLinked()
         return ErrorHandles.Unknown(err)
     }
-    const buffer = await OsuGraph(profile.ReplaysWatched.map(e => e.count), {reverse:false})
-    return {files: [new MessageAttachment(buffer, "watched_replays.png")]}
+    const buffer = await OsuGraph(profile.ReplaysWatched.map(e => e.count), { reverse: false })
+    return { files: [new MessageAttachment(buffer, "watched_replays.png")] }
 }
 
 const messageCallback = async (message: Message, args: string[]) => {
     const params = ParseArgs(args)
     const msg = await replaysGraph(message.author.id, params)
-    msg.allowedMentions = {repliedUser: false}
+    msg.allowedMentions = { repliedUser: false }
     message.reply(msg)
 }
 

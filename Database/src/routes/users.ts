@@ -1,6 +1,6 @@
-import { NextFunction, Request, Response, Router } from "express"
+import { Request, Response, Router } from "express"
 import { addTempKey, GetUser, onMessage } from "../database/users"
-import { ValidateSecret } from "../functions"
+import { RefreshToken, ValidateSecret } from "../functions/utils"
 import { onMessage as gOnMessage } from "../database/guild"
 
 const router = Router()
@@ -31,5 +31,11 @@ router.post("/addtempsecret", (req: Request, res: Response) => {
     res.status(200).send()
 })
 
+router.post("/refreshtoken", async (req: Request, res: Response) => {
+    const { userId } = req.body
+    if (!userId) return res.status(400).send()
+    const user = await RefreshToken(userId)
+    res.status(200).json(user)
+})
 
 export default router

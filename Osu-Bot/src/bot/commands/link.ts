@@ -2,7 +2,7 @@ import axios from "axios"
 import { randomBytes } from "crypto"
 import { CommandInteraction } from "discord.js"
 
-export const Link = async (interaction: CommandInteraction) => {
+const Link = async (interaction: CommandInteraction) => {
     //https://osu.ppy.sh/oauth/authorize?redirect_uri=http://localhost:727/auth&response_type=code&client_id=11234&state=290850421487042560
     const secret = randomBytes(16).toString("hex")
     await axios.post("http://localhost:727/users/addtempsecret", {
@@ -17,11 +17,9 @@ export const Link = async (interaction: CommandInteraction) => {
     })
 }
 
-export const interactionCallback = (interaction: CommandInteraction) => {
+const interactionCallback = (interaction: CommandInteraction) => {
     Link(interaction)
 }
-
-export const name = []
 
 export const interactionCommand = {
     name: "link",
