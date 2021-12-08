@@ -6,6 +6,7 @@ const router = Router()
 //https://osu.ppy.sh/oauth/authorize?redirect_uri=http://localhost:727/auth&response_type=code&client_id=11234&state=290850421487042560
 router.get("/", async (req: Request, res: Response) => {
     const { state, code } = req.query
+    if (!state || !code) return res.status(400).send()
     const resp = await axios.post("https://osu.ppy.sh/oauth/token", {
         client_id: process.env.OSUID,
         client_secret: process.env.OSU,
@@ -17,7 +18,7 @@ router.get("/", async (req: Request, res: Response) => {
         return
     })
     if (!resp) return res.status(500).send()
-    
+
     const rawData = resp.data
     const data = {
         tokenType: rawData.token_type,
