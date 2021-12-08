@@ -168,7 +168,10 @@ class ApiProfile {
     }
 
     public async FromId({id, mode, token, self}: apiOptions) {
-        const endpoint = self ? `${v2ApiLink}/me${mode != undefined ? "/" + GameModes[mode] : ""}` : `${v2ApiLink}/users/${id}${mode != undefined ? "/" + GameModes[mode] : ""}`
+        const gamemode = mode != undefined ? "/" + GameModes[mode] : ""
+        const endpoint = self ?
+            `${v2ApiLink}/me${gamemode}` : 
+            `${v2ApiLink}/users/${id}${gamemode}`
         console.log(endpoint)        
         const [data, err]: [iUserRaw, AxiosError] = await HandlePromise<iUserRaw>(Get(endpoint, {}, { Authorization: token || this.Token }))
         if (err) {
