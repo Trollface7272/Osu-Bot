@@ -1,12 +1,17 @@
 import { Request, Response, Router } from "express";
 import axios, { AxiosError } from "axios"
 import { SetOsuToken } from "../database/users";
+import { join } from "path";
 
 const router = Router()
+const paths = {
+    fail: join(__dirname, "..", "html", "fail.html"),
+    success: join(__dirname, "..", "html", "success.html")
+}
 //https://osu.ppy.sh/oauth/authorize?redirect_uri=http://localhost:727/auth&response_type=code&client_id=11234&state=290850421487042560
 router.get("/", async (req: Request, res: Response) => {
     const { state, code } = req.query
-    if (!state || !code) return res.status(400).send()
+    if (!state || !code) return res.status(200).sendFile(paths.fail)
     const resp = await axios.post("https://osu.ppy.sh/oauth/token", {
         client_id: process.env.OSUID,
         client_secret: process.env.OSU,
@@ -17,7 +22,7 @@ router.get("/", async (req: Request, res: Response) => {
         console.log(err)
         return
     })
-    if (!resp) return res.status(500).send()
+    if (!resp) return res.status(200).sendFile(paths.fail)
 
     const rawData = resp.data
     const data = {
@@ -28,7 +33,7 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     SetOsuToken(state as string, data, req.headers["cf-connecting-ip"] as string)
-    res.send("<script>javascript:window.close('','_parent','');</script>")
+    res.status(200).sendFile(paths.success)
 })
 
 export default router
