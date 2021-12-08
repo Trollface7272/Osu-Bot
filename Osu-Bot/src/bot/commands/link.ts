@@ -8,7 +8,7 @@ const Link = async (interaction: CommandInteraction) => {
     await axios.post("http://localhost:727/users/addtempsecret", {
         userId: interaction.user.id, secret: process.env.SECRET, key: secret
     })
-    interaction.reply({
+    if (!interaction.replied) interaction.reply({
         ephemeral: true,
         allowedMentions: {
             repliedUser: false

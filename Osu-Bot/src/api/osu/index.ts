@@ -9,11 +9,11 @@ class cOsuApi {
         this.Token = key
         this.Profile = new cProfile(this.Token)
     }
-    static async new(secret: string) {
+    static async new() {
         return (async () => {
             let {token_type, expires_in, access_token, ...data} = await Post("https://osu.ppy.sh/oauth/token", {
-                client_id: "11234",
-                client_secret: secret,
+                client_id: process.env.OSUID,
+                client_secret: process.env.OSU,
                 grant_type: "client_credentials",
                 scope: "public"
             })
@@ -24,5 +24,5 @@ class cOsuApi {
 }
 
 export let OsuApi: cOsuApi
-cOsuApi.new(process.env.OSU).then(e => OsuApi = e)
+cOsuApi.new().then(e => OsuApi = e)
 export const Profile = cProfile

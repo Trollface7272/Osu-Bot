@@ -15,7 +15,6 @@ export const RefreshToken = async (userId: string) => {
         client_id: process.env.OSUID,
         client_secret: process.env.OSU,
         refresh_token: user.osu.refresh,
-        score: "public",
         grant_type: "refresh_token"
     }, { validateStatus: () => false }).catch(err => logger.Error(err))
     if (!resp) return
