@@ -29,6 +29,7 @@ const Profile = async (member: GuildMember, {Name, Gamemode}: parsedArgs): Promi
 }
 
 const messageCallback = async (message: Message, args: string[]) => {
+    if (process.env.NODE_ENV !== "development") return
     const osuArgs = ParseArgs(args)
     const profile = await Profile(message.member, osuArgs)
     profile.allowedMentions = {
