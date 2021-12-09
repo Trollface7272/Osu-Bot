@@ -13,7 +13,7 @@ const Link = async (interaction: CommandInteraction) => {
         allowedMentions: {
             repliedUser: false
         },
-        content: `https://osu.ppy.sh/oauth/authorize?redirect_uri=${process.env.OSUURL}&response_type=code&client_id=${process.env.OSUID}&state=${secret}`
+        content: `https://osu.ppy.sh/oauth/authorize?redirect_uri=${process.env.OSUURL}&response_type=code&client_id=${process.env.OSUID}&state=${secret}&scope=${"public identity"}`
     })
 }
 

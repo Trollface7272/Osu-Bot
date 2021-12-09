@@ -2,7 +2,8 @@ export enum Errors {
     BadToken,
     WrongEndpoint,
     PlayerDoesNotExist,
-    Unknown
+    Unknown,
+    InvalidOsuApp
 }
 
 export class OsuApiError {
