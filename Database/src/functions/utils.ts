@@ -31,3 +31,12 @@ export const RefreshToken = async (userId: string) => {
     user.osu = data
     return user
 }
+
+export const HandleAsync = async <T>(promise: Promise<T>): Promise<[T, any]> => {
+    try {
+        const data = await promise
+        return [data, null]
+    } catch (err) {
+        return [null, err]
+    }
+}

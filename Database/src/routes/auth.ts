@@ -3,6 +3,7 @@ import axios, { AxiosError } from "axios"
 import { SetOsuToken } from "../database/users";
 import { join } from "path";
 import logger from "../functions/logger";
+import { HandleAsync } from "../functions/utils";
 
 const router = Router()
 const paths = {
@@ -30,10 +31,17 @@ router.get("/", async (req: Request, res: Response) => {
         tokenType: rawData.token_type,
         expireDate: new Date(rawData.expires_in * 1000 + Date.now()),
         token: rawData.access_token,
-        refresh: rawData.refresh_token
+        refresh: rawData.refresh_token,
+        id: null
     }
-    console.log(data);
-    
+    const [profile, err] = await HandleAsync(axios.get("https://osu.ppy.sh/api/v2/me", {
+        headers: {
+            "Authorization": `${data.tokenType} ${data.token}`
+        }
+    }))
+    if (!err) return res.status(200).sendFile(paths.fail)
+    data.id = profile.data.id
+
     SetOsuToken(state as string, data, req.headers["cf-connecting-ip"] as string)
     res.status(200).sendFile(paths.success)
 })
