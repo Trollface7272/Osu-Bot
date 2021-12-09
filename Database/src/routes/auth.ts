@@ -39,7 +39,7 @@ router.get("/", async (req: Request, res: Response) => {
             "Authorization": `${data.tokenType} ${data.token}`
         }
     }))
-    if (!err) return res.status(200).sendFile(paths.fail)
+    if (err) return res.status(200).sendFile(paths.fail)
     data.id = profile.data.id
 
     SetOsuToken(state as string, data, req.headers["cf-connecting-ip"] as string)
