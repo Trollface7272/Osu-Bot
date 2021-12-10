@@ -2,6 +2,7 @@ import { GetPrefix } from "@database/guild"
 import { Message } from "discord.js"
 import Client from "@bot/client"
 import { OnMessage } from "@database/users"
+import logger from "@functions/logger"
 
 export const callback = async (_: Client, message: Message) => {
     if (message.author.bot) return
@@ -16,7 +17,11 @@ export const callback = async (_: Client, message: Message) => {
     
     
     if (!callback) return
-    callback(message, args)
+    try { await callback(message, args) }
+    catch (err) {
+        if (err == "DiscordAPIError: Cannot send an empty message") return
+        else logger.Error(err)
+    }
 }
 
 const parseArgs = (args: string[]) => {

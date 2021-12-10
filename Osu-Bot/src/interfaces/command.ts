@@ -2,7 +2,7 @@ import { ApplicationCommandData, Interaction, Message } from "discord.js"
 
 export interface iMessageCommand {
     name: string
-    callback: (message: Message, args: string[]) => void
+    callback: (message: Message, args: string[]) => Promise<void>
 }
 
 export interface iInteractionCommand {

@@ -16,7 +16,7 @@ const messageCallback = async (message: Message, args: string[]) => {
     const params = ParseArgs(args)
     const msg = await rankGraph(message.author.id, params)
     msg.allowedMentions = {repliedUser: false}
-    message.reply(msg)
+    message.reply(msg).catch(err => null)
 }
 
 const name = ["rank"]
