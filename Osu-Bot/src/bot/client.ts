@@ -39,7 +39,8 @@ class Client extends dClient {
                 const interaction = file.interactionCommand
                 if (interaction) {
                     this.interactions.set(interaction.name, interaction)
-                    guild.commands.create(interaction.data)
+                    if (interaction.data)
+                        guild.commands.create(interaction.data)
                 }
             })
             const eventFiles: string[] = await gPromise(`${__dirname}/events/**/*{.ts,.js}`)

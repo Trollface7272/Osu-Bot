@@ -1,4 +1,4 @@
-import { ApplicationCommandData, CommandInteraction, Message } from "discord.js"
+import { ApplicationCommandData, Interaction, Message } from "discord.js"
 
 export interface iMessageCommand {
     name: string
@@ -8,7 +8,7 @@ export interface iMessageCommand {
 export interface iInteractionCommand {
     name: string
     data: ApplicationCommandData
-    callback: (interaction: CommandInteraction) => void
+    callback: (interaction: Interaction) => void
 }
 
 export interface iCommandFile {
