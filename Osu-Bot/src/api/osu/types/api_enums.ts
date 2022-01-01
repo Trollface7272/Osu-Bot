@@ -14,3 +14,14 @@ export enum ProfilePage {
     "top_ranks",
     "medals"
 }
+
+export enum ScoreGrade {
+    SSH = "SSH",
+    SS = "SS",
+    SH = "SH",
+    S = "S",
+    A = "A",
+    B = "B",
+    C = "C",
+    F = "F"
+}

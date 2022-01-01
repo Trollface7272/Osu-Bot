@@ -37,16 +37,20 @@ export const GetOsuToken = async (discordId: string, discordName: string) => {
 
 export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0|1|2|3): Promise<OsuProfile|MessageOptions> => {
     let user: iUser|void = await GetUser(userId)
-    
+
     const profileOptions = {id: Name[0], mode: Mode, self: false, token: user?.osu?.token || undefined}
     if (Name?.length == 0)
         if (user?.osu?.token)
             profileOptions.self = true
         
-    
     if (!profileOptions.self && Name?.length == 0) throw { error: ErrorCodes.ProfileNotLinked }
-    if (profileOptions.token && user.osu.expireDate.getTime() < Date.now()) user = await RefreshToken(user._id)
-    if (!user) throw { error: ErrorCodes.ProfileNotLinked }
+
+    if (profileOptions.token && user.osu.expireDate.getTime() < Date.now()) {
+        user = await RefreshToken(user._id)
+        if (!user) throw { error: ErrorCodes.ProfileNotLinked }
+        profileOptions.token = user.osu.token
+    }
+
     const [profile, err] = await HandlePromise(OsuApi.Profile.FromId(profileOptions))
     if (err) {
         const resp = new MessageEmbed().setColor("RANDOM")

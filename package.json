@@ -1,0 +1,10 @@
+{
+    "private": true,
+    "workspaces": {
+        "packages": [
+            "Osu-Bot",
+            "Database"
+        ]
+    },
+    "packageManager": "yarn@3.1.1"
+}

@@ -23,6 +23,8 @@ const Profile = async (member: GuildMember, {Name, Gamemode}: parsedArgs): Promi
 ▸ **Playcount:** ${profile.PlayCount} (${Math.round(profile.PlayTime/60/60)} hours)\
 `
         )
+        .setImage("https://i.imgur.com/g1pszyN.png")
+
     const actionRow = new MessageActionRow().addComponents(
         new MessageSelectMenu()
             .setCustomId(`osu profile;${profile.id}`)

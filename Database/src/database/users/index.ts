@@ -1,7 +1,7 @@
-import { connection, model } from "mongoose"
+import { connection } from "mongoose"
 import logger from "../../functions/logger"
 import { iUser } from "./interfaces"
-import { UserModel, UserSchema } from "./schema"
+import { UserModel } from "./schema"
 const collection = connection.collection("users")
 
 const CreateUser = ({ userId, name }: { userId: string, name?: string }) => {
@@ -17,8 +17,10 @@ const CreateUser = ({ userId, name }: { userId: string, name?: string }) => {
 
 export const GetUser = async ({ userId, name }: { userId: string, name?: string }): Promise<iUser> => {
     const response = await collection.findOne<iUser>({
+        //@ts-ignore
         _id: userId
     })
+    //@ts-ignore
     if (!response) return CreateUser({ userId, name: name || "" })
     return response
 }
@@ -29,15 +31,19 @@ export const SetOsuToken = async (key: string, data: { token: string, refresh: s
 }
 
 export const RefreshOsuToken = async (userId: string, data: { token: string, refresh: string, expireDate: Date, tokenType: string }) => {
-    collection.updateOne({ userId }, { $set: { osu: data } })
+    //@ts-ignore
+    const resp = await collection.updateOne({ _id: userId }, { $set: { osu: data } })
 }
 
 export const onMessage = async (userId: string, isCommand: boolean) => {
     let inc = isCommand ? { messages: 1, commands: 1 } : { messages: 1 }
-    const updated = await collection.updateOne({ _id: userId }, { $inc: inc })
+    //@ts-ignore
+    const updated =  (await collection.updateOne({ _id: userId }, { $inc: inc }))
+    //@ts-ignore
     if (updated.modifiedCount == 0) CreateUser({ userId })
 }
 
 export const addTempKey = (userId: string, key: string) => {
+    //@ts-ignore
     collection.updateOne({ _id: userId }, {$set: {osutempsecret: key}})
 }

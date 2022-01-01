@@ -4,8 +4,11 @@ import axios from "axios"
 
 export const GetUser = async (userId: string, name?: string): Promise<iUser> => {
     const res = await axios.post("http://localhost:727/users/get", { userId, name, secret: process.env.SECRET }, {}).catch(e => logger.Error(e))
+    
     if (!res || res.status !== 200) return //TODO: HANDLE ERROR
-    if (res.data.osu.expireDate) res.data.osu.expireDate = new Date(res.data.osu.expireDate)
+    
+    if (res.data?.osu?.expireDate) res.data.osu.expireDate = new Date(res.data.osu.expireDate)
+    
     return res.data
 }
 

@@ -3,7 +3,14 @@ export interface iUser {
     name: string,
     messages: number,
     commands: number,
-    osu: { token?: string, refresh?: string, name?: string, expireDate?: Date }
+    osu: iUserOsu
+}
+
+export interface iUserOsu {
+    token?: string,
+    refresh?: string,
+    name?: string,
+    expireDate?: Date
 }
 
 export interface iGuild {

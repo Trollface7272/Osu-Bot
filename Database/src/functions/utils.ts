@@ -1,4 +1,4 @@
-import axios from "axios"
+import axios, { AxiosResponse } from "axios"
 import { NextFunction, Request, Response } from "express"
 import { GetUser, RefreshOsuToken } from "../database/users"
 import logger from "./logger"
@@ -15,8 +15,10 @@ export const RefreshToken = async (userId: string) => {
         client_id: process.env.OSUID,
         client_secret: process.env.OSU,
         refresh_token: user.osu.refresh,
-        grant_type: "refresh_token"
-    }, { validateStatus: () => false }).catch(err => logger.Error(err))
+        grant_type: "refresh_token",
+        scope: "identify public"
+    }, { validateStatus: () => true }).catch(err => logger.Error(err))
+    logger.Log((resp as AxiosResponse)?.data)
     if (!resp) return
     if (resp.status !== 200) return resp.data.message == "The refresh token is invalid." ? { error: 5, message: "Invalid Refresh Token"} : {}
     const rawData = resp.data
