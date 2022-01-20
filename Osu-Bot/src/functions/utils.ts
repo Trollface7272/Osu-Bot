@@ -4,6 +4,7 @@ import { OsuProfile } from "@osuapi/endpoints/profile"
 import { UserBest } from "@osuapi/endpoints/score"
 import { Errors } from "@osuapi/error"
 import { OsuApi } from "@osuapi/index"
+import { iScoreHitcounts } from "@osuapi/types/score"
 import { MessageEmbed, MessageOptions } from "discord.js"
 import { ErrorCodes } from "./errors"
 import logger from "./logger"
@@ -97,5 +98,69 @@ export const HandlePromise = async <T>(promise: Promise<any>): Promise<[T, any]>
         return [res, null]
     } catch (err) {
         return [null, err]
+    }
+}
+
+
+
+
+
+export const GetCombo = (combo: number, maxCombo: number, mode: number): string => {
+    if (mode == 3) return `x${combo}`
+    return `x${combo}/${maxCombo}`
+}
+
+export const DateDiff = (date1: Date, date2: Date) => {
+    const diff: number = date2.getTime() - date1.getTime()
+    const out: string[] = []
+    const years: number = Math.floor(diff / 1000 / 60 / 60 / 24 / 30 / 12)
+    if (years > 0) out.push(`${years} Year${years > 1 ? "s" : ""} `)
+
+    const months: number = Math.floor(diff / 1000 / 60 / 60 / 24 / 30 % 12)
+    if (months > 0) out.push(`${months} Month${months > 1 ? "s" : ""} `)
+
+    const days: number = Math.floor(diff / 1000 / 60 / 60 / 24 % 30)
+    if (days > 0) out.push(`${days} Day${days > 1 ? "s" : ""} `)
+
+    const hours: number = Math.floor(diff / 1000 / 60 / 60 % 24)
+    if (hours > 0) out.push(`${hours} Hour${hours > 1 ? "s" : ""} `)
+
+    const minutes: number = Math.floor(diff / 1000 / 60 % 60)
+    if (minutes > 0) out.push(`${minutes} Minute${minutes > 1 ? "s" : ""} `)
+
+    const seconds: number = Math.floor(diff / 1000 % 60)
+    out.push(`${seconds} Second${seconds > 1 ? "s" : ""} `)
+
+    return out[0] + (out[1] || "")
+}
+
+export const GetHits = (counts: iScoreHitcounts, mode: number): string => {
+    switch (mode) {
+        case 1:
+        case 0:
+            return `${counts[300]}/${counts[100]}/${counts[50]}/${counts.miss}`
+        case 2:
+            return `${counts[300]}/${counts[100]}/${counts[50]}/${counts.katu}/${counts.miss}`
+        case 3:
+            return `${counts.geki}/${counts[300]}/${counts.katu}/${counts[100]}/${counts[50]}/${counts.miss}`
+        default:
+            logger.Error(`Unknown gamemode: ${mode}`)
+            return "Unknown"
+    }
+}
+
+export const CalculateAcc = (counts: iScoreHitcounts, mode: number): string => {
+    switch (mode) {
+        case 0:
+            return Math.round(((counts[300] * 300 + counts[100] * 100 + counts[50] * 50) / ((counts[300] + counts[100] + counts[50] + counts.miss) * 300) * 100)).toFixed(2)
+        case 1:
+            return Math.round(((counts[300] + counts[100] * 0.5) / (counts[300] + counts[100] + counts.miss) * 100)).toFixed(2)
+        case 2:
+            return Math.round(((counts[300] + counts[100] + counts[50]) / (counts[300] + counts[100] + counts[50] + counts.miss + counts.katu) * 100)).toFixed(2)
+        case 3:
+            return Math.round(((300 * (counts[300] + counts.geki) + 200 * counts.katu + 100 * counts[100] + 50 * counts[50]) / (300 * (counts.geki + counts[300] + counts.katu + counts[100] + counts[50] + counts.miss)) * 100 * 100) / 100).toFixed(2)
+        default:
+            logger.Error(`Unknown gamemode: ${mode}`)
+            return "Unknown"
     }
 }

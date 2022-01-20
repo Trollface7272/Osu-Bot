@@ -1,11 +1,10 @@
-import { GamemodeNames } from "@consts/osu"
 import logger from "@functions/logger"
-import { v2ApiLink } from "@osuapi/consts"
+import { GameModes, v2ApiLink } from "@osuapi/consts"
 import { Errors, OsuApiError } from "@osuapi/error"
 import { Get, HandlePromise } from "@osuapi/functions"
 import { GameMode, ScoreGrade } from "@osuapi/types/api_enums"
 import { AxiosError } from "axios"
-import { BeatmapRaw, BeatmapSetRaw } from "./beatmap"
+import { Beatmap, BeatmapRaw, BeatmapSet, BeatmapSetRaw } from "./beatmap"
 
 export class ScoreUserRaw {
     public avatar_url: string
@@ -80,11 +79,17 @@ export class ScoreUser {
     public get pm_friends_only() { return this.raw.pm_friends_only }
     public get profile_colour() { return this.raw.profile_colour }
     public get username() { return this.raw.username }
+
+    constructor(user: ScoreUserRaw) {
+        this.raw = user
+    }
 }
 
 export class UserBest {
     public raw: ScoreRaw
     private user: ScoreUser
+    private beatmap: Beatmap
+    private beatmapSet: BeatmapSet
 
     public get ScoreId() { return this.raw.id }
     public get UserId() { return this.raw.user_id }
@@ -111,8 +116,8 @@ export class UserBest {
     public get GameMode() { return this.raw.mode }
     public get GameModeRaw() { return this.raw.mode_int }
     public get HasReplay() { return this.raw.replay }
-    public get Beatmap() { return this.raw.beatmap }
-    public get BeatmapSet() { return this.raw.beatmapset }
+    public get Beatmap() { return this.beatmap }
+    public get BeatmapSet() { return this.beatmapSet }
     public get Weighted() {
         return {
             Percantage: this.raw.weight.percentage,
@@ -123,7 +128,9 @@ export class UserBest {
 
     constructor(raw: ScoreRaw) {
         this.raw = raw
-
+        this.user = new ScoreUser(raw.user)
+        this.beatmap = new Beatmap(raw.beatmap)
+        this.beatmapSet = new BeatmapSet(raw.beatmapset)
     }
 }
 
@@ -134,10 +141,10 @@ class ApiScore {
     private Token: string
     constructor(token: string) { this.Token = token }
 
-    public async GetBest({ id, mode, self, token, limit=100, offset=0 }: bestParams) {
+    public async GetBest({ id, mode, self, token, limit=4, offset=0 }: bestParams) {
         const endpoint = `${v2ApiLink}/users/${id}/scores/best`
         const params = {
-            mode: GamemodeNames[mode],
+            mode: GameModes[mode],
             limit, offset
         }
         logger.Debug(endpoint, params)
