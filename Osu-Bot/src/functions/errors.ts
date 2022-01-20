@@ -2,8 +2,15 @@ import { MessageOptions } from "discord.js"
 import logger from "./logger"
 
 export enum ErrorCodes {
-    Unknown,
-    ProfileNotLinked
+    Unknown="Unknown",
+    ProfileNotLinked="ProfileNotLinked",
+    InvalidAccessToken="InvalidAccessToken"
+}
+
+const InvalidAccessToken = (): MessageOptions => {
+    return {
+        content: "Please re-link your profile using /link"
+    }
 }
 
 const ProfileNotLinked = (): MessageOptions => {
@@ -14,10 +21,13 @@ const ProfileNotLinked = (): MessageOptions => {
 
 const Unknown = (err: any) => {
     logger.Error(err)
-    return { }
+    return {
+        content: "Unknown error occured!"
+    }
 }
 
 export const ErrorHandles = {
     ProfileNotLinked,
-    Unknown
+    Unknown,
+    InvalidAccessToken
 }

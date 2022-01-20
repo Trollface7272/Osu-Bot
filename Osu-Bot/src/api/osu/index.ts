@@ -1,13 +1,16 @@
 import cProfile from "./endpoints/profile"
+import cScore from "./endpoints/score"
 import { Errors } from "./error"
 import { Post } from "./functions"
 
 class cOsuApi {
     private Token: string
     public Profile: cProfile
+    public Score: cScore
     constructor(key: string) {
         this.Token = key
         this.Profile = new cProfile(this.Token)
+        this.Score = new cScore(this.Token)
     }
     public static async new() {
         return (async () => {

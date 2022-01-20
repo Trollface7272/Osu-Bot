@@ -1,6 +1,8 @@
+import logger from "@functions/logger"
 import axios, { Axios, AxiosRequestConfig, AxiosRequestHeaders } from "axios"
 
 export const Get = async (link: string, data: any, headers: any={}, axiosOptions?: AxiosRequestConfig) => {
+    logger.Debug(`Request -> ${link}`, data)
     return (await axios.get(link, {
         params: data,
         headers: {

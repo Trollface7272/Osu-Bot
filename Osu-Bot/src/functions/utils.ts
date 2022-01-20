@@ -1,25 +1,26 @@
 import { GetUser, RefreshToken } from "@database/users"
-import { iUser } from "@interfaces/database";
-import { OsuProfile } from "@osuapi/endpoints/profile";
-import { Errors } from "@osuapi/error";
+import { iUser } from "@interfaces/database"
+import { OsuProfile } from "@osuapi/endpoints/profile"
+import { UserBest } from "@osuapi/endpoints/score"
+import { Errors } from "@osuapi/error"
 import { OsuApi } from "@osuapi/index"
-import { MessageEmbed, MessageOptions } from "discord.js";
-import { ErrorCodes } from "./errors";
-import logger from "./logger";
+import { MessageEmbed, MessageOptions } from "discord.js"
+import { ErrorCodes } from "./errors"
+import logger from "./logger"
 
 export interface parsedArgs {
     Name?: string[],
-    Gamemode?: 0|1|2|3
+    Gamemode?: 0 | 1 | 2 | 3
 }
 
 export const ParseArgs = (args: string[]): parsedArgs => {
-    let out: parsedArgs = {Name:[], Gamemode:0}
+    let out: parsedArgs = { Name: [], Gamemode: 0 }
     for (let i = 0; i < args.length; i++) {
         const el = args[i];
         if (el == "m") {
-            const mode = parseInt(args[i+1])
-            if (mode >= 0 && mode <=3) {
-                out.Gamemode = mode as 0|1|2|3
+            const mode = parseInt(args[i + 1])
+            if (mode >= 0 && mode <= 3) {
+                out.Gamemode = mode as 0 | 1 | 2 | 3
                 i++
             }
         }
@@ -35,44 +36,59 @@ export const GetOsuToken = async (discordId: string, discordName: string) => {
     return data.osu.token
 }
 
-export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0|1|2|3): Promise<OsuProfile|MessageOptions> => {
-    let user: iUser|void = await GetUser(userId)
+const GetOsuProfileOptions = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3) => {
+    let user: iUser | void = await GetUser(userId)
 
-    const profileOptions = {id: Name[0], mode: Mode, self: false, token: user?.osu?.token || undefined}
+    const profileOptions = { id: Name[0], mode: Mode, self: false, token: user?.osu?.token || undefined }
     if (Name?.length == 0)
         if (user?.osu?.token)
             profileOptions.self = true
-        
+
     if (!profileOptions.self && Name?.length == 0) throw { error: ErrorCodes.ProfileNotLinked }
 
     if (profileOptions.token && user.osu.expireDate.getTime() < Date.now()) {
         user = await RefreshToken(user._id)
-        if (!user) throw { error: ErrorCodes.ProfileNotLinked }
+        if (!user) throw { error: ErrorCodes.InvalidAccessToken }
         profileOptions.token = user.osu.token
     }
 
-    const [profile, err] = await HandlePromise(OsuApi.Profile.FromId(profileOptions))
-    if (err) {
-        const resp = new MessageEmbed().setColor("RANDOM")
-        switch(err.code) {
-            case Errors.BadToken:
-                throw {
-                    embeds: [resp.setDescription("Please relink your profile.")]
-                }
-            case Errors.PlayerDoesNotExist: 
-                throw {
-                    embeds: [resp.setDescription("Player does not exist.")]
-                }
-            case Errors.WrongEndpoint:
-            case Errors.Unknown:
-                logger.Error(err)
-                throw {
-                    embeds: [resp.setDescription("Unknown error occured")]
-                }
-        }
-        
+    if (profileOptions.self) profileOptions.id = user.osu.name
+    return profileOptions
+}
+
+const HandleApiError = (err: any) => {
+    const resp = new MessageEmbed().setColor("RANDOM")
+    switch (err.code) {
+        case Errors.BadToken:
+            throw {
+                embeds: [resp.setDescription("Please relink your profile.")]
+            }
+        case Errors.PlayerDoesNotExist:
+            throw {
+                embeds: [resp.setDescription("Player does not exist.")]
+            }
+        case Errors.WrongEndpoint:
+        case Errors.Unknown:
+        default:
+            logger.Error(err)
+            throw {
+                embeds: [resp.setDescription("Unknown error occured")]
+            }
     }
+}
+
+export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3): Promise<OsuProfile | MessageOptions> => {
+    const profileOptions = await GetOsuProfileOptions(userId, Name, Mode)
+    const [profile, err] = await HandlePromise(OsuApi.Profile.FromId(profileOptions))
+    if (err) return HandleApiError(err)
     return profile
+}
+
+export const GetOsuTopPlays = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3): Promise<UserBest | MessageOptions> => {
+    const profileOptions = await GetOsuProfileOptions(userId, Name, Mode)
+    const [scores, err] = await HandlePromise<UserBest>(OsuApi.Score.GetBest(profileOptions))
+    if (err) return HandleApiError(err)
+    return scores
 }
 
 export const HandlePromise = async <T>(promise: Promise<any>): Promise<[T, any]> => {

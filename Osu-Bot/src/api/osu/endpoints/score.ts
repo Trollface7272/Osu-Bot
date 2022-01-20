@@ -1,4 +1,10 @@
+import { GamemodeNames } from "@consts/osu"
+import logger from "@functions/logger"
+import { v2ApiLink } from "@osuapi/consts"
+import { Errors, OsuApiError } from "@osuapi/error"
+import { Get, HandlePromise } from "@osuapi/functions"
 import { GameMode, ScoreGrade } from "@osuapi/types/api_enums"
+import { AxiosError } from "axios"
 import { BeatmapRaw, BeatmapSetRaw } from "./beatmap"
 
 export class ScoreUserRaw {
@@ -44,7 +50,7 @@ export class ScoreRaw {
     public beatmap: BeatmapRaw
     public beatmapset: BeatmapSetRaw
     public weight: {
-        percenrage: number
+        percentage: number
         pp: number
     }
     public user: ScoreUserRaw
@@ -53,7 +59,7 @@ export class ScoreRaw {
 export class ScoreUser {
     public raw: ScoreUserRaw
     public get Avatar() { return this.raw.avatar_url }
-    public get Country() { 
+    public get Country() {
         return {
             code: this.raw.country_code.toUpperCase(),
             name: new Intl.DisplayNames(["en"], { type: "region" }).of(this.raw.country_code.toUpperCase())
@@ -81,14 +87,14 @@ export class UserBest {
     private user: ScoreUser
 
     public get ScoreId() { return this.raw.id }
-    public get UserId() { return this.raw.user_id}
+    public get UserId() { return this.raw.user_id }
     public get Sccuracy() { return this.raw.accuracy }
     public get Mods() { return this.raw.mods.map(e => e) }
     public get Score() { return this.raw.score }
     public get MaxCombo() { return this.raw.max_combo }
     public get Passed() { return this.raw.passed }
     public get Perfect() { return this.raw.perfect }
-    public get Counts() { 
+    public get Counts() {
         return {
             "50": this.raw.statistics.count_50,
             "100": this.raw.statistics.count_100,
@@ -107,27 +113,44 @@ export class UserBest {
     public get HasReplay() { return this.raw.replay }
     public get Beatmap() { return this.raw.beatmap }
     public get BeatmapSet() { return this.raw.beatmapset }
-    public get Weighted() { return {
-        Percantage: this.raw.weight.percenrage,
-        Performance: this.raw.weight.pp
-    } }
+    public get Weighted() {
+        return {
+            Percantage: this.raw.weight.percentage,
+            Performance: this.raw.weight.pp
+        }
+    }
     public get User() { return this.user }
 
     constructor(raw: ScoreRaw) {
         this.raw = raw
-        
+
     }
 }
 
 interface bestParams {
-    id: string, mode?: 0 | 1 | 2 | 3, token?: string, self: string
+    id?: string, mode?: 0 | 1 | 2 | 3, token?: string, self?: boolean, limit?: number, offset?: number
 }
 class ApiScore {
-    private token: string
-    constructor(token: string) { this.token = token }
+    private Token: string
+    constructor(token: string) { this.Token = token }
 
-    public static GetBest({ id, mode, token }: bestParams) {
-
+    public async GetBest({ id, mode, self, token, limit=100, offset=0 }: bestParams) {
+        const endpoint = `${v2ApiLink}/users/${id}/scores/best`
+        const params = {
+            mode: GamemodeNames[mode],
+            limit, offset
+        }
+        logger.Debug(endpoint, params)
+        const [data, err]: [ScoreRaw[], AxiosError] = await HandlePromise<ScoreRaw[]>(Get(endpoint, params, { Authorization: "Bearer " + token || this.Token }))
+        logger.Debug(data, err)
+        if (err) {
+            if (err.response?.status == 401) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+            if (err.response?.status == 403) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+            if (err.response?.status == 404) throw new OsuApiError(Errors.WrongEndpoint, "Provided invalid api endpoint")
+            throw new OsuApiError(Errors.Unknown, err)
+        }
+        if (!data) throw new OsuApiError(Errors.PlayerDoesNotExist, "Selecred player does not exist")
+        return data.map(score => new UserBest(score))
     }
 }
 

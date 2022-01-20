@@ -19,7 +19,7 @@ export const callback = async (_: Client, message: Message) => {
     if (!callback) return
     try { await callback(message, args) }
     catch (err) {
-        if (err == "DiscordAPIError: Cannot send an empty message") return
+        if (err.includes("Cannot send an empty message")) return
         else logger.Error(err)
     }
 }
