@@ -212,7 +212,7 @@ class ApiProfile {
             `${v2ApiLink}/me${gamemode}` :
             `${v2ApiLink}/users/${id}${gamemode}`
         logger.Debug(endpoint)
-        const [data, err]: [iUserRaw, AxiosError] = await HandlePromise<iUserRaw>(Get(endpoint, {}, { Authorization: "Bearer " + token || this.Token }, {}))
+        const [data, err]: [iUserRaw, AxiosError] = await HandlePromise<iUserRaw>(Get(endpoint, {}, { Authorization: token ? "Bearer " + token : this.Token }, {}))
         if (err) {
             if (err.response.status == 401) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
             if (err.response.status == 403) throw new OsuApiError(Errors.BadToken, "Provided invalid token")

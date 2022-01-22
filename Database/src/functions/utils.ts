@@ -22,11 +22,19 @@ export const RefreshToken = async (userId: string) => {
     if (!resp) return
     if (resp.status !== 200) return resp.data.message == "The refresh token is invalid." ? { error: 5, message: "Invalid Refresh Token"} : {}
     const rawData = resp.data
+    
+    const osuUser = (await axios.get("https://osu.ppy.sh/api/v2/me/osu", {
+        headers: {
+            Authorization: `Bearer ${rawData.access_token}`
+        }
+    })).data
+    
     const data = {
         tokenType: rawData.token_type,
         expireDate: new Date(rawData.expires_in * 1000 + Date.now()),
         token: rawData.access_token,
-        refresh: rawData.refresh_token
+        refresh: rawData.refresh_token,
+        name: osuUser.id
     }
     logger.Log(data)
     RefreshOsuToken(userId, data)

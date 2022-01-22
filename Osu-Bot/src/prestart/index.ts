@@ -1,5 +1,2 @@
-const PreStart = async () => {
-    
-}
-
-export default PreStart
+import { config } from "dotenv";
+config()

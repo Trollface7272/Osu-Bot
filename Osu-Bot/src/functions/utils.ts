@@ -1,7 +1,8 @@
 import { GetUser, RefreshToken } from "@database/users"
 import { iUser } from "@interfaces/database"
+import { GameModes } from "@osuapi/consts"
 import { OsuProfile } from "@osuapi/endpoints/profile"
-import { UserBest } from "@osuapi/endpoints/score"
+import { BestParams, Score } from "@osuapi/endpoints/score"
 import { Errors } from "@osuapi/error"
 import { OsuApi } from "@osuapi/index"
 import { iScoreHitcounts } from "@osuapi/types/score"
@@ -9,23 +10,128 @@ import { MessageEmbed, MessageOptions } from "discord.js"
 import { ErrorCodes } from "./errors"
 import logger from "./logger"
 
+const DifficultyEmoteIds = [
+    ["858310858303864852", "858310858362978324", "858310858311729163", "858310858165190667", "858310858299408384", "858310857909075999"],
+    ["858310830269399071", "858310830847557642", "858310830763671572", "858310830671003649", "858310830927118356", "858310830714257408"],
+    ["858310941186850876", "858310941208215582", "858310941178724372", "858310941263134720", "858310941170466836", "858310941182394398"],
+    ["858310914922381343", "858310915279290398", "858310915053322251", "858310914959605763", "858310915241803796", "858310915266445322"],
+]
+
 export interface parsedArgs {
-    Name?: string[],
+    Name?: string[]
     Gamemode?: 0 | 1 | 2 | 3
+    GreaterThan?: number
+    Best?: boolean
+    Reversed?: boolean
+    Specific?: number[]
+    Random?: boolean
+}
+
+export const Mods = {
+    Bit: {
+        None: 0,
+        NoFail: 1 << 0,
+        Easy: 1 << 1,
+        TouchDevice: 1 << 2,
+        Hidden: 1 << 3,
+        HardRock: 1 << 4,
+        SuddenDeath: 1 << 5,
+        DoubleTime: 1 << 6,
+        Relax: 1 << 7,
+        HalfTime: 1 << 8,
+        Nightcore: 1 << 9,
+        Flashlight: 1 << 10,
+        Autoplay: 1 << 11,
+        SpunOut: 1 << 12,
+        Relax2: 1 << 13,
+        Perfect: 1 << 14,
+        Key4: 1 << 15,
+        Key5: 1 << 16,
+        Key6: 1 << 17,
+        Key7: 1 << 18,
+        Key8: 1 << 19,
+        FadeIn: 1 << 20,
+        Random: 1 << 21,
+        Cinema: 1 << 22,
+        Target: 1 << 23,
+        Key9: 1 << 24,
+        KeyCoop: 1 << 25,
+        Key1: 1 << 26,
+        Key3: 1 << 27,
+        Key2: 1 << 28,
+        ScoreV2: 1 << 29,
+        Mirror: 1 << 30
+    },
+    Names: {
+        None: "No Mod",
+        NoFail: "NF",
+        Easy: "EZ",
+        TouchDevice: "TD",
+        Hidden: "HD",
+        HardRock: "HR",
+        SuddenDeath: "SD",
+        DoubleTime: "DT",
+        Relax: "RX",
+        HalfTime: "HT",
+        Nightcore: "NC",
+        Flashlight: "FL",
+        Autoplay: "AU",
+        SpunOut: "SO",
+        Relax2: "AP",
+        Perfect: "PF",
+        Key4: "4K",
+        Key5: "5K",
+        Key6: "6K",
+        Key7: "7K",
+        Key8: "8K",
+        FadeIn: "FI",
+        Random: "RD",
+        Cinema: "CN",
+        Target: "TP",
+        Key9: "9K",
+        KeyCoop: "2P",
+        Key1: "1K",
+        Key3: "3K",
+        Key2: "2K",
+        ScoreV2: "V2",
+        Mirror: "MR"
+    },
 }
 
 export const ParseArgs = (args: string[]): parsedArgs => {
-    let out: parsedArgs = { Name: [], Gamemode: 0 }
+    let out: parsedArgs = { Name: [], Gamemode: 0, Specific: [] }
     for (let i = 0; i < args.length; i++) {
         const el = args[i];
-        if (el == "m") {
-            const mode = parseInt(args[i + 1])
-            if (mode >= 0 && mode <= 3) {
-                out.Gamemode = mode as 0 | 1 | 2 | 3
+        switch(el) {
+            case "m":
+                const mode = parseInt(args[i + 1], 10)
+                if (mode >= 0 && mode <= 3) {
+                    out.Gamemode = mode as 0 | 1 | 2 | 3
+                    i++
+                }
+                break
+            case "b":
+            case "r":
+                out.Best = true
+                break
+            case "g":
+                out.GreaterThan = parseFloat(args[i+1])
                 i++
-            }
+                break
+            case "rv":
+                out.Reversed = true
+                break
+            case "rand":
+                out.Random = true
+                break
+            default:
+                const num = parseInt(el, 10)
+                if (!isNaN(num) && num <= 100 && num > 0) {
+                    out.Specific.push(num)
+                } else out.Name.push(el)
+
+
         }
-        out.Name.push(el)
     }
     return out
 }
@@ -85,9 +191,9 @@ export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0 | 1 
     return profile
 }
 
-export const GetOsuTopPlays = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3): Promise<UserBest | MessageOptions> => {
+export const GetOsuTopPlays = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3, options: BestParams): Promise<Score | MessageOptions> => {
     const profileOptions = await GetOsuProfileOptions(userId, Name, Mode)
-    const [scores, err] = await HandlePromise<UserBest>(OsuApi.Score.GetBest(profileOptions))
+    const [scores, err] = await HandlePromise<Score>(OsuApi.Score.GetBest({...profileOptions, ...options}))
     if (err) return HandleApiError(err)
     return scores
 }
@@ -100,10 +206,6 @@ export const HandlePromise = async <T>(promise: Promise<any>): Promise<[T, any]>
         return [null, err]
     }
 }
-
-
-
-
 
 export const GetCombo = (combo: number, maxCombo: number, mode: number): string => {
     if (mode == 3) return `x${combo}`
@@ -163,4 +265,35 @@ export const CalculateAcc = (counts: iScoreHitcounts, mode: number): string => {
             logger.Error(`Unknown gamemode: ${mode}`)
             return "Unknown"
     }
+}
+
+export const ConvertBitModsToMods = (mods: number): string => {
+    if (mods == 0) return "No Mod"
+
+    let resultMods = ""
+    if (mods & Mods.Bit.Perfect) mods &= ~Mods.Bit.SuddenDeath
+    if (mods & Mods.Bit.Nightcore) mods &= ~Mods.Bit.DoubleTime
+    for (const mod in Mods.Bit) {
+        if (Mods.Bit[mod] & mods)
+            resultMods += Mods.Names[mod]
+    }
+    return resultMods
+}
+
+export const GetFlagUrl = (country: string): string => {
+    return `https://flagcdn.com/w80/${country.toLowerCase()}.png`
+}
+
+export const GetProfileLink = (id: number, mode: 0 | 1 | 2 | 3): string => {
+    return `https://osu.ppy.sh/users/${id}/${GameModes[mode]}`
+}
+
+export const GetDifficultyEmote = (mode: 0 | 1 | 2 | 3, star: number) => {
+    let difficulty = 0
+    if (star > 2) difficulty++
+    if (star > 2.7) difficulty++
+    if (star > 4) difficulty++
+    if (star > 5.3) difficulty++
+    if (star > 6.5) difficulty++
+    return `<:Black:${DifficultyEmoteIds[mode][difficulty]}>`
 }

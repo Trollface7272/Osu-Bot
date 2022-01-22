@@ -2,6 +2,7 @@ export enum Errors {
     BadToken,
     WrongEndpoint,
     PlayerDoesNotExist,
+    BeatmapDoesNotExist,
     Unknown,
     InvalidOsuApp
 }

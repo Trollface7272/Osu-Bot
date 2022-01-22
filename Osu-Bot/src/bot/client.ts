@@ -5,7 +5,7 @@ import { iCommandFile, iInteractionCommand, iMessageCommand } from "@interfaces/
 
 import glob from "glob"
 import logger, { SetLogChannel } from "@functions/logger"
-import PreStart from "@prestart/index"
+import { CheckForNewMaps } from "./other/RankedBeatmps"
 
 export const gPromise = promisify(glob)
 
@@ -33,7 +33,7 @@ class Client extends dClient {
 
                 const command = file.messageCommand
                 if (command)
-                    for (let i = 0; i < command.name.length; i++) 
+                    for (let i = 0; i < command.name.length; i++)
                         this.commands.set(command.name[i], command)
 
                 const interaction = file.interactionCommand
@@ -50,10 +50,11 @@ class Client extends dClient {
                 this.on(file.name, file.callback.bind(null, this))
             })
             SetLogChannel(await (await this.guilds.fetch("341153679992160266")).channels.fetch("909270388624732160") as TextChannel)
+            setInterval(() => { CheckForNewMaps(this) }, 1000 * 60)
+            CheckForNewMaps(this)
         })
     }
     public async Start(token: string) {
-        await PreStart()
         this.login(token)
     }
 }

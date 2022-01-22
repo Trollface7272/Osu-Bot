@@ -1,13 +1,15 @@
-import { ApplicationCommandData, Interaction, Message } from "discord.js"
+import { ApplicationCommandData, Interaction, Message, PermissionString } from "discord.js"
 
 export interface iMessageCommand {
-    name: string
-    callback: (message: Message, args: string[]) => Promise<void>
+    name: string[]
+    permissions: PermissionString[]
+    callback: (message: Message, args: string[]) => Promise<any>
 }
 
 export interface iInteractionCommand {
     name: string
     data: ApplicationCommandData
+    permissions: PermissionString[]
     callback: (interaction: Interaction) => void
 }
 

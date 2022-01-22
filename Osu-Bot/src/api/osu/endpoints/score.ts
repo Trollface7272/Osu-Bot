@@ -24,6 +24,7 @@ export class ScoreUserRaw {
 
 export class ScoreRaw {
     public id: number
+    public index: number
     public user_id: number
     public accuracy: number
     public mods: string[]
@@ -76,24 +77,25 @@ export class ScoreUser {
         }
     }
     public get LastVisit() { return new Date(this.raw.last_visit) }
-    public get pm_friends_only() { return this.raw.pm_friends_only }
-    public get profile_colour() { return this.raw.profile_colour }
-    public get username() { return this.raw.username }
+    public get PmFriendsOnly() { return this.raw.pm_friends_only }
+    public get ProfileColor() { return this.raw.profile_colour }
+    public get Username() { return this.raw.username }
 
     constructor(user: ScoreUserRaw) {
         this.raw = user
     }
 }
 
-export class UserBest {
+export class Score {
     public raw: ScoreRaw
     private user: ScoreUser
     private beatmap: Beatmap
     private beatmapSet: BeatmapSet
 
     public get ScoreId() { return this.raw.id }
+    public get Index() { return this.raw.index }
     public get UserId() { return this.raw.user_id }
-    public get Sccuracy() { return this.raw.accuracy }
+    public get Accuracy() { return this.raw.accuracy }
     public get Mods() { return this.raw.mods.map(e => e) }
     public get Score() { return this.raw.score }
     public get MaxCombo() { return this.raw.max_combo }
@@ -110,7 +112,7 @@ export class UserBest {
         }
     }
     public get Grade() { return this.raw.rank }
-    public get SetAt() { return this.raw.created_at }
+    public get SetAt() { return new Date(this.raw.created_at) }
     public get UserBestId() { return this.raw.best_id }
     public get Performance() { return this.raw.pp }
     public get GameMode() { return this.raw.mode }
@@ -125,6 +127,8 @@ export class UserBest {
         }
     }
     public get User() { return this.user }
+    public get Replay() { return this.HasReplay ? `https://osu.ppy.sh/scores/${this.GameMode}/${this.ScoreId}/download` : null }
+    public get ScoreUrl() { return `https://osu.ppy.sh/scores/${this.GameMode}/${this.ScoreId}` }
 
     constructor(raw: ScoreRaw) {
         this.raw = raw
@@ -134,22 +138,25 @@ export class UserBest {
     }
 }
 
-interface bestParams {
+
+export interface BestParams {
     id?: string, mode?: 0 | 1 | 2 | 3, token?: string, self?: boolean, limit?: number, offset?: number
 }
+
+
 class ApiScore {
     private Token: string
     constructor(token: string) { this.Token = token }
 
-    public async GetBest({ id, mode, self, token, limit=4, offset=0 }: bestParams) {
+    public async GetBest({ id, mode, self, token, limit = 100, offset = 0 }: BestParams) {
         const endpoint = `${v2ApiLink}/users/${id}/scores/best`
         const params = {
             mode: GameModes[mode],
             limit, offset
         }
-        logger.Debug(endpoint, params)
-        const [data, err]: [ScoreRaw[], AxiosError] = await HandlePromise<ScoreRaw[]>(Get(endpoint, params, { Authorization: "Bearer " + token || this.Token }))
-        logger.Debug(data, err)
+        const [data, err]: [ScoreRaw[], AxiosError] = await HandlePromise<ScoreRaw[]>(Get(endpoint, params, { Authorization: token ? "Bearer " + token : this.Token }))
+        console.log(data);
+
         if (err) {
             if (err.response?.status == 401) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
             if (err.response?.status == 403) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
@@ -157,7 +164,7 @@ class ApiScore {
             throw new OsuApiError(Errors.Unknown, err)
         }
         if (!data) throw new OsuApiError(Errors.PlayerDoesNotExist, "Selecred player does not exist")
-        return data.map(score => new UserBest(score))
+        return data.map((score, index) => { score.index = index + offset + 1; return new Score(score) })
     }
 }
 

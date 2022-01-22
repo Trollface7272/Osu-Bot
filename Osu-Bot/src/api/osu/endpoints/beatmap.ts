@@ -1,3 +1,8 @@
+import logger from "@functions/logger"
+import { GameModes, v2ApiLink } from "@osuapi/consts"
+import { Errors, OsuApiError } from "@osuapi/error"
+import { Get, HandlePromise, SilentGet } from "@osuapi/functions"
+import { AxiosError } from "axios"
 
 export class BeatmapRaw {
     public beatmapset_id: number
@@ -21,12 +26,13 @@ export class BeatmapRaw {
     public hit_length: number
     public is_scoreable: boolean
     public last_updated: string
-    public mode_int: string
+    public mode_int: 0 | 1 | 2 | 3
     public passcount: string
     public playcount: string
     public ranked: string
     public url: string
     public checksum: string
+    public max_combo: number
 }
 
 export class BeatmapSetRaw {
@@ -56,6 +62,21 @@ export class BeatmapSetRaw {
     public track_id: number | null
     public user_id: number
     public video: boolean
+    public availability
+    public bpm: number
+    public can_be_hyped: boolean
+    public discussion_enabled: boolean
+    public discussion_locked: boolean
+    public is_scoreable: boolean
+    public last_updated: string
+    public legacy_thread_url: string
+    public nominations_summary
+    public ranked: 1 | 0
+    public ranked_date: string
+    public storyboard: boolean
+    public submitted_date: string
+    public tags: string
+    public beatmaps: BeatmapRaw[]
 }
 
 export class Beatmap {
@@ -100,6 +121,8 @@ export class Beatmap {
     public get Plays() { return this.raw.playcount }
     public get Url() { return this.raw.url }
     public get Hash() { return this.raw.checksum }
+    public get MaxCombo() { return this.raw.max_combo }
+    public set MaxCombo(value) { this.raw.max_combo = value }
 
     constructor(raw: BeatmapRaw) {
         this.raw = raw
@@ -108,6 +131,7 @@ export class Beatmap {
 
 export class BeatmapSet {
     private raw: BeatmapSetRaw
+    private beatmaps: Beatmap[]
 
     public get Artist() { return this.raw.artist }
     public get ArtistUnicode() { return this.raw.artist_unicode }
@@ -118,7 +142,11 @@ export class BeatmapSet {
     public get Id() { return this.raw.id }
     public get Is() {
         return {
-            nsfw: this.raw.nsfw
+            Nsfw: this.raw.nsfw,
+            Hypable: this.raw.can_be_hyped,
+            DiscussionEnabled: this.raw.discussion_enabled,
+            DiscussionLocked: this.raw.discussion_locked,
+            Scorable: this.raw.is_scoreable
         }
     }
     public get PlayCount() { return this.raw.play_count }
@@ -130,8 +158,71 @@ export class BeatmapSet {
     public get TrackId() { return this.raw.track_id }
     public get MapperId() { return this.raw.user_id }
     public get hasVideo() { return this.raw.video }
+    public get Availability() { return this.raw.availability }
+    public get Bpm() { return this.raw.bpm }
+    public get LastUpdated() { return new Date(this.raw.last_updated) }
+    public get LegacyThreadUrl() { return this.raw.legacy_thread_url }
+    public get Naminations() { return this.raw.nominations_summary }
+    public get Ranked() { return this.raw.ranked }
+    public get RankedDate() { return new Date(this.raw.ranked_date) }
+    public get Storyboard() { return this.raw.storyboard }
+    public get SubmittedDate() { return new Date(this.raw.submitted_date) }
+    public get Tags() { return this.raw.tags }
+    public get Beatmaps() { return this.beatmaps }
 
     constructor(raw: BeatmapSetRaw) {
         this.raw = raw
+        this.beatmaps = raw.beatmaps.map(map => new Beatmap(map))
     }
 }
+
+export interface BeatmapFromIdOptions {
+    id: string[]
+    mode?: 0 | 1 | 2 | 3
+    token?: string
+}
+
+export interface BeatmapSearchOptions {
+    mode?: 0 | 1 | 2 | 3
+    token?: string
+    type?: string
+    text?: string
+    silent?: boolean
+}
+
+class ApiBeatmap {
+    private Token: string
+
+    constructor(token: string) { this.Token = token }
+
+    public async ByIds({ id, mode, token }: BeatmapFromIdOptions) {
+        const formatted = id.map(i => "ids[]=" + i).join("&")
+        const endpoint = `${v2ApiLink}/beatmaps?${formatted}`
+        const [data, err]: [{ beatmaps: BeatmapRaw[] }, AxiosError] = await HandlePromise<{ beatmaps: BeatmapRaw[] }>(Get(endpoint, {}, { Authorization: token ? "Bearer " + token : this.Token }, {}))
+        if (err) {
+            if (err.response.status == 401) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+            if (err.response.status == 403) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+            if (err.response.status == 404) throw new OsuApiError(Errors.WrongEndpoint, "Provided invalid api endpoint")
+            throw new OsuApiError(Errors.Unknown, err)
+        }
+        if (!data || !data.beatmaps || data.beatmaps.length == 0) throw new OsuApiError(Errors.BeatmapDoesNotExist, "Selecred beatmap does not exist")
+
+        return data.beatmaps.map(map => new Beatmap(map))
+    }
+    public async Search({ mode, token, type, text, silent }: BeatmapSearchOptions) {
+        const endpoint = `${v2ApiLink}/beatmapsets/search?${mode ? `m=${mode}&` : ""}${type ? `s=${type}&` : ""}${text ? `q=${text}&` : ""}`
+        const [data, err]: [{ beatmapsets: BeatmapSetRaw[] }, AxiosError] = await HandlePromise<{ beatmapsets: BeatmapSetRaw[] }>((silent ? SilentGet : Get)(endpoint, {}, { Authorization: token ? "Bearer " + token : this.Token }, {}))
+        if (err) {
+            if (err.response.status == 401) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+            if (err.response.status == 403) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+            if (err.response.status == 404) throw new OsuApiError(Errors.WrongEndpoint, "Provided invalid api endpoint")
+            throw new OsuApiError(Errors.Unknown, err)
+        }
+
+        if (!data || !data.beatmapsets || data.beatmapsets.length == 0) throw new OsuApiError(Errors.BeatmapDoesNotExist, "Selecred beatmap does not exist")
+
+        return data.beatmapsets.map(map => new BeatmapSet(map))
+    }
+}
+
+export default ApiBeatmap
