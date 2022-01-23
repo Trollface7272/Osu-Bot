@@ -4,6 +4,6 @@ export interface iEvent {
 }
 
 export interface dbEvent {
-    RegisteredChannels: string[]
+    RegisteredChannels: { id: string, mode: (0 | 1 | 2 | 3)[] }[]
     LastChecked: Date
 }

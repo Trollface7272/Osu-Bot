@@ -80,6 +80,8 @@ export class ScoreUser {
     public get PmFriendsOnly() { return this.raw.pm_friends_only }
     public get ProfileColor() { return this.raw.profile_colour }
     public get Username() { return this.raw.username }
+    public get Url() { return `https://osu.ppy.sh/u/${this.raw.id}` }
+
 
     constructor(user: ScoreUserRaw) {
         this.raw = user
@@ -130,6 +132,7 @@ export class Score {
     public get Replay() { return this.HasReplay ? `https://osu.ppy.sh/scores/${this.GameMode}/${this.ScoreId}/download` : null }
     public get ScoreUrl() { return `https://osu.ppy.sh/scores/${this.GameMode}/${this.ScoreId}` }
 
+
     constructor(raw: ScoreRaw) {
         this.raw = raw
         this.user = new ScoreUser(raw.user)
@@ -155,7 +158,6 @@ class ApiScore {
             limit, offset
         }
         const [data, err]: [ScoreRaw[], AxiosError] = await HandlePromise<ScoreRaw[]>(Get(endpoint, params, { Authorization: token ? "Bearer " + token : this.Token }))
-        console.log(data);
 
         if (err) {
             if (err.response?.status == 401) throw new OsuApiError(Errors.BadToken, "Provided invalid token")

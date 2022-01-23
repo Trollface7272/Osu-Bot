@@ -144,7 +144,7 @@ export const GetOsuToken = async (discordId: string, discordName: string) => {
 }
 
 const GetOsuProfileOptions = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3) => {
-    let user: iUser | void = await GetUser(userId)
+    let [user, err]: [iUser, any] = await HandlePromise(GetUser(userId))
 
     const profileOptions = { id: Name[0], mode: Mode, self: false, token: user?.osu?.token || undefined }
     if (Name?.length == 0)
@@ -154,7 +154,7 @@ const GetOsuProfileOptions = async (userId: string, Name: string[], Mode: 0 | 1 
     if (!profileOptions.self && Name?.length == 0) throw { error: ErrorCodes.ProfileNotLinked }
 
     if (profileOptions.token && user.osu.expireDate.getTime() < Date.now()) {
-        user = await RefreshToken(user._id)
+        user = await RefreshToken(user._id) as iUser
         if (!user) throw { error: ErrorCodes.InvalidAccessToken }
         profileOptions.token = user.osu.token
     }

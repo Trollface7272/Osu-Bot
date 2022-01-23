@@ -172,7 +172,7 @@ export class BeatmapSet {
 
     constructor(raw: BeatmapSetRaw) {
         this.raw = raw
-        this.beatmaps = raw.beatmaps.map(map => new Beatmap(map))
+        this.beatmaps = raw.beatmaps?.map(map => new Beatmap(map))
     }
 }
 

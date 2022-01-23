@@ -7,6 +7,6 @@ export const GetEvents = async (type: string) => {
     const [events, err] = await HandlePromise<dbEvent>(SilentPost("http://localhost:727/events/load", { type, update: true }))
     return events
 }
-export const RegisterEventListener = async (type: string, channelId: string) => {
-    await HandlePromise(SilentPost("http://localhost:727/events/register", { type, channelId }))
+export const RegisterEventListener = async (type: string, channelId: string, args: { mode: (0 | 1 | 2 | 3)[] }) => {
+    await HandlePromise(SilentPost("http://localhost:727/events/register", { type, channelId, ...args }))
 }

@@ -7,9 +7,9 @@ const router = Router()
 router.use("/", ValidateSecret)
 
 router.post("/register", (req: Request, res: Response) => {
-    const { type, channelId } = req.body
+    const { type, channelId, secret, ...rest } = req.body
     if (!type  || !channelId) res.status(400).send()
-    Register(type, channelId)
+    Register(type, channelId, rest)
     res.json()
 })
 

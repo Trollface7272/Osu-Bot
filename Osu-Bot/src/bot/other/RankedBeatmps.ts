@@ -15,7 +15,7 @@ const _CheckForNewMaps = async (client: Client, type: string) => {
     const event = await GetEvents(type)
     if (!event?.RegisteredChannels) return logger.Error("RankedBeatmaps -> event is unexpected value ->", event)
 
-    const channels = await Promise.all(event.RegisteredChannels.map(async id => client.channels.cache.get(id) || await client.channels.fetch(id)))
+    const channelData = await Promise.all(event.RegisteredChannels.map(async (data) => [client.channels.cache.get(data.id) || await client.channels.fetch(data.id), data.mode]))
     const lastCheckDate = new Date(event.LastChecked)
 
     const [beatmaps, err] = await HandlePromise<BeatmapSet[]>(OsuApi.Beatmap.Search({ mode: 0, type: type, silent: true }))
@@ -25,13 +25,17 @@ const _CheckForNewMaps = async (client: Client, type: string) => {
 
     if (maps.length === 0) return
 
-    const data = maps.map((map) => { return { description: FormatBeatmapSet(map), image: `https://b.ppy.sh/thumb/${map.Id}l.jpg` } })
     const base = new MessageEmbed()
         .setColor("RANDOM")
-        .setTitle(`New ranked map`)
-    const embeds = data.map((d: {description: string, image: string}) => new MessageEmbed(base).setDescription(d.description).setThumbnail(d.image))
-    channels.map((channel: TextChannel) => {
+        .setTitle(`New ${type} map`)
+    const data = maps.map((map) => ({
+        embed: new MessageEmbed(base).setDescription(FormatBeatmapSet(map)).setThumbnail(`https://b.ppy.sh/thumb/${map.Id}l.jpg`),
+        gamemodes: [...new Set(map.Beatmaps.map(e => e.GamemodeNum))]
+    }))
+    
+    channelData.map(([channel, mode]: [TextChannel, (0|1|2|3)[]]) => {
         console.log("Sending");
-        channel.send({ embeds: embeds.slice(-10) })
+        const embeds = data.map(e => mode.filter(value => e.gamemodes.includes(value)).length > 0 ? e.embed : null).filter(el => el !== null).slice(-10)
+        if (embeds.length > 0) channel.send({ embeds })
     })
 }

@@ -14,7 +14,7 @@ const commandInteraction = (interaction: CommandInteraction) => {
 }
 
 const selectMenuInteraction = (interaction: SelectMenuInteraction) => {
-    (interaction.client as Client).interactions.get(interaction.customId.split(";")[0]).callback(interaction)
+    (interaction.client as Client).interactions.get(interaction.customId.split(";")[0])?.callback(interaction)
 }
 
 export const name = "interactionCreate"
