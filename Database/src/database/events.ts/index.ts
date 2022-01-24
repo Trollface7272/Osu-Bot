@@ -24,9 +24,9 @@ export const Load = async (type: string) => {
     return { RegisteredChannels: event.RegisteredChannels, LastChecked: event.LastCheck }
 }
 
-export const Checked = async (type: string) => {
+export const Checked = async (type: string, date: Date) => {
     const id = EventIds[type]
     if (!id) return
 
-    collection.updateOne({ _id: new Types.ObjectId(id) }, { $set: { LastCheck: new Date() } })
+    collection.updateOne({ _id: new Types.ObjectId(id) }, { $set: { LastCheck: date } })
 }

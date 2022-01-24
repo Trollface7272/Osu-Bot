@@ -2,7 +2,7 @@ import { Message, MessageAttachment, MessageEmbed, MessageOptions } from "discor
 import { GetOsuProfile, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
 import { OsuGraph } from "@functions/canvasUtils"
 import { OsuProfile } from "@osuapi/endpoints/profile"
-import { ErrorCodes, ErrorHandles } from "@functions/errors"
+import { ErrorHandles } from "@functions/errors"
 
 const rankGraph = async (userId: string, {Name, Gamemode}: parsedArgs): Promise<MessageOptions> => {
     const [profile, err] = await HandlePromise<OsuProfile>(GetOsuProfile(userId, Name, Gamemode))

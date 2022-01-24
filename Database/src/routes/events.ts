@@ -17,7 +17,14 @@ router.post("/load", async (req: Request, res: Response) => {
     const { type, update } = req.body
     if (!type) res.status(400).send()
     res.json(await Load(type))
-    if (update) Checked(type)
+    if (update) Checked(type, new Date())
+})
+
+router.post("/checked", async (req: Request, res: Response) => {
+    const { type, date } = req.body
+    if (!type || !date) res.status(400).send()
+    Checked(type, new Date(date))
+    res.json()
 })
 
 export default router

@@ -1,5 +1,5 @@
 import Client from "@bot/client"
-import { GetEvents } from "@database/events"
+import { GetEvents, UpdateEvent } from "@database/events"
 import logger from "@functions/logger"
 import { HandlePromise } from "@functions/utils"
 import { OsuNews, OsuNewsPost } from "@osuapi/endpoints/news"
@@ -7,9 +7,9 @@ import { OsuApi } from "@osuapi/index"
 import { MessageEmbed, TextChannel } from "discord.js"
 
 const FormatNewsPost = (embedBase: MessageEmbed, post: OsuNewsPost) => {
-    let description  = `[**${post.Title}**](https://osu.ppy.sh/home/news/${post.Slug})\n`
-        description += `${post.Preview}\n`
-        description += `Posted by ${post.Author}`
+    let description = `[**${post.Title}**](https://osu.ppy.sh/home/news/${post.Slug})\n`
+    description += `${post.Preview}\n`
+    description += `Posted by ${post.Author}`
 
     const embed = new MessageEmbed(embedBase)
         .setThumbnail(post.FirstImage)
@@ -24,13 +24,17 @@ export const CheckForOsuNews = async (client: Client) => {
     const channels = await Promise.all(event.RegisteredChannels.map(async (data) => client.channels.cache.get(data.id) || await client.channels.fetch(data.id)))
     const lastCheckDate = new Date(event.LastChecked)
 
-    const [data, err] = await HandlePromise<OsuNews>(OsuApi.News.GetNews({silent: true}))
-    
-    const news = data.Posts.filter(val => 
+    const [data, err] = await HandlePromise<OsuNews>(OsuApi.News.GetNews({ silent: true }))
+
+    const news = data.Posts.filter(val =>
         val.PublishedDate > lastCheckDate
     )
 
     if (news.length === 0) return
+    
+    let newest = lastCheckDate
+    news.map(news => { if (newest < news.PublishedDate) newest = news.PublishedDate })
+    UpdateEvent("news", newest)
 
     const base = new MessageEmbed()
         .setColor("RANDOM")

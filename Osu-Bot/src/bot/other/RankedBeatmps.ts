@@ -1,6 +1,6 @@
 import Client from "@bot/client";
 import { FormatBeatmapSet } from "@bot/commands/beatmaps/beatmap";
-import { GetEvents } from "@database/events";
+import { GetEvents, UpdateEvent } from "@database/events";
 import logger from "@functions/logger";
 import { HandlePromise } from "@functions/utils";
 import { BeatmapSet } from "@osuapi/endpoints/beatmap";
@@ -25,6 +25,10 @@ const _CheckForNewMaps = async (client: Client, type: string) => {
 
     if (maps.length === 0) return
 
+    let newest = lastCheckDate
+    maps.map(map => { if (newest < map.RankedDate) newest = map.RankedDate })
+    UpdateEvent(type, newest)
+
     const base = new MessageEmbed()
         .setColor("RANDOM")
         .setTitle(`New ${type} map`)
@@ -32,8 +36,8 @@ const _CheckForNewMaps = async (client: Client, type: string) => {
         embed: new MessageEmbed(base).setDescription(FormatBeatmapSet(map)).setThumbnail(`https://b.ppy.sh/thumb/${map.Id}l.jpg`),
         gamemodes: [...new Set(map.Beatmaps.map(e => e.GamemodeNum))]
     }))
-    
-    channelData.map(([channel, mode]: [TextChannel, (0|1|2|3)[]]) => {
+
+    channelData.map(([channel, mode]: [TextChannel, (0 | 1 | 2 | 3)[]]) => {
         console.log("Sending");
         const embeds = data.map(e => mode.filter(value => e.gamemodes.includes(value)).length > 0 ? e.embed : null).filter(el => el !== null).slice(-10)
         if (embeds.length > 0) channel.send({ embeds })
