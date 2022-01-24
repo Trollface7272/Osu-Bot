@@ -98,11 +98,21 @@ export const Mods = {
     },
 }
 
-export const ParseArgs = (args: string[]): parsedArgs => {
+const CommandGamemodes = [
+    [],
+    ["taiko"],
+    ["ctb", "fruits"],
+    ["mania"]
+]
+
+export const ParseArgs = (args: string[], command: string): parsedArgs => {
     let out: parsedArgs = { Name: [], Gamemode: 0, Specific: [] }
+    CommandGamemodes.map((e, index) => {
+        e.map(el => { if (el.includes(command)) out.Gamemode = index as 0 | 1 | 2 | 3 })
+    })
     for (let i = 0; i < args.length; i++) {
         const el = args[i];
-        switch(el) {
+        switch (el) {
             case "m":
                 const mode = parseInt(args[i + 1], 10)
                 if (mode >= 0 && mode <= 3) {
@@ -111,11 +121,15 @@ export const ParseArgs = (args: string[]): parsedArgs => {
                 }
                 break
             case "b":
+            case "o":
+                out.Best = true
+                out.Reversed = true
+                break
             case "r":
                 out.Best = true
                 break
             case "g":
-                out.GreaterThan = parseFloat(args[i+1])
+                out.GreaterThan = parseFloat(args[i + 1])
                 i++
                 break
             case "rv":
@@ -193,7 +207,7 @@ export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0 | 1 
 
 export const GetOsuTopPlays = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3, options: BestParams): Promise<Score | MessageOptions> => {
     const profileOptions = await GetOsuProfileOptions(userId, Name, Mode)
-    const [scores, err] = await HandlePromise<Score>(OsuApi.Score.GetBest({...profileOptions, ...options}))
+    const [scores, err] = await HandlePromise<Score>(OsuApi.Score.GetBest({ ...profileOptions, ...options }))
     if (err) return HandleApiError(err)
     return scores
 }

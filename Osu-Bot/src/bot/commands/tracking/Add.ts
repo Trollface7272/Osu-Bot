@@ -23,7 +23,7 @@ const TrackUser = async (userId: string, channelId: string, { Name, Gamemode, Sp
 const messageCallback = async (message: Message, args: string[]) => {
     switch (args[0]) {
         case "add":
-            const options = ParseArgs(args.slice(1))
+            const options = ParseArgs(args.slice(1), message.content.toLocaleLowerCase().split(" ")[0])
             const msg = await TrackUser(message.author.id, message.channel.id, options)
             if (msg == "👍" || msg == "👎") return message.react(msg)
             else return message.reply(msg)

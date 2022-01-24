@@ -15,7 +15,7 @@ const playcountGraph = async (userId: string, {Name, Gamemode}: parsedArgs): Pro
 }
 
 const messageCallback = async (message: Message, args: string[]) => {
-    const params = ParseArgs(args)
+    const params = ParseArgs(args, message.content.toLocaleLowerCase().split(" ")[0])
     const msg = await playcountGraph(message.author.id, params)
     message.reply(msg)
 }

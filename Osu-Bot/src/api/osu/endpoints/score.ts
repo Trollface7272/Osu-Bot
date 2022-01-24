@@ -157,11 +157,13 @@ class ApiScore {
             mode: GameModes[mode],
             limit, offset
         }
+        
         const [data, err]: [ScoreRaw[], AxiosError] = await HandlePromise<ScoreRaw[]>(Get(endpoint, params, { Authorization: token ? "Bearer " + token : this.Token }))
 
         if (err) {
             if (err.response?.status == 401) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
             if (err.response?.status == 403) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+            console.log(endpoint)
             if (err.response?.status == 404) throw new OsuApiError(Errors.WrongEndpoint, "Provided invalid api endpoint")
             throw new OsuApiError(Errors.Unknown, err)
         }

@@ -15,7 +15,7 @@ const FormatTopPlay = (Gamemode: 0 | 1 | 2 | 3, score: Score): string => {
     let fcppDisplay = "", description = ""
     //if (score.MaxCombo < score.MaxCombo - 15 || score.Counts.miss > 0) fcppDisplay = `(${score.FcPerformance.toLocaleString()}pp for ${RoundFixed(score.FcAccuracy)}% FC) `
     if (score.MaxCombo < beatmap.MaxCombo - 15 || score.Counts.miss > 0) fcppDisplay = `(${1}pp for ${1}% FC) `
-    description += `**${score.Index}. [${beatmapSet.Title} [${beatmap.Version}]](${score.ScoreUrl}) +${score.Mods.length > 0 ? score.Mods : "NoMod"}** [${Math.round(beatmap.Stars * 100) / 100}★]\n`
+    description += `**${score.Index}. [${beatmapSet.Title} [${beatmap.Version}]](${score.ScoreUrl}) +${score.Mods.length > 0 ? score.Mods.join("") : "NoMod"}** [${Math.round(beatmap.Stars * 100) / 100}★]\n`
     description += `▸ ${GradeEmotes[score.Grade]} ▸ **${score.Performance}pp** ${fcppDisplay}▸ ${Math.round(score.Accuracy * 10000) / 100}%\n`
     description += `▸ ${score.Score.toLocaleString()} ▸ ${GetCombo(score.MaxCombo, beatmap.MaxCombo, Gamemode)} ▸ [${GetHits(score.Counts, Gamemode)}]\n`
     description += `▸ Score Set ${DateDiff(score.SetAt, new Date(new Date().toLocaleString('en-US', { timeZone: "UTC" })))}Ago\n`
@@ -88,7 +88,7 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
 
 
 const messageCallback = async (message: Message, args: string[]) => {
-    const parsedArgs = ParseArgs(args)
+    const parsedArgs = ParseArgs(args, message.content.toLocaleLowerCase().split(" ")[0])
 
     const data = await osuTop(message.author.id, parsedArgs)
 

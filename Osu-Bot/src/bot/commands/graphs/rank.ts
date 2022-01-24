@@ -15,7 +15,7 @@ const rankGraph = async (userId: string, {Name, Gamemode}: parsedArgs): Promise<
 }
 
 const messageCallback = async (message: Message, args: string[]) => {
-    const params = ParseArgs(args)
+    const params = ParseArgs(args, message.content.toLocaleLowerCase().split(" ")[0])
     const msg = await rankGraph(message.author.id, params)
     message.reply(msg).catch(err => null)
 }

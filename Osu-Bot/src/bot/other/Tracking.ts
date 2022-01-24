@@ -16,8 +16,8 @@ const formatTrackingScore = (base: MessageEmbed, score: Score) => {
         description += `▸ ${score.Score.toLocaleString()} ▸ ${GetCombo(score.MaxCombo, score.Beatmap.MaxCombo, score.Beatmap.GamemodeNum)} ▸ [${GetHits(score.Counts, score.Beatmap.GamemodeNum)}]\n`
         
     const embed = new MessageEmbed(base)
-        .setAuthor(`${score.User.Username} gained new #${score.Index} top play.`, score.User.Avatar, score.User.Url)
-        .setFooter(`Set ${DateDiff(score.SetAt, new Date(new Date().toLocaleString('en-US', { timeZone: "UTC" })))}Ago\n`)
+        .setAuthor(`${score.User.Username} gained a new #${score.Index} top play.`, score.User.Avatar, score.User.Url)
+        .setFooter(`Set ${DateDiff(new Date(), score.SetAt)}Ago\n`)
         .setDescription(description)
         .setThumbnail(`https://b.ppy.sh/thumb/${score.Beatmap.Id}l.jpg`)
     return embed
