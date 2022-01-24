@@ -10,7 +10,17 @@ const replaysGraph = async (userId: string, { Name, Gamemode }: parsedArgs): Pro
         if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
         return ErrorHandles.Unknown(err)
     }
-    const buffer = await OsuGraph(profile.ReplaysWatched.map(e => e.count), { reverse: false })
+    const datesWithData = profile.ReplaysWatched.map(e => ({date: new Date(e.start_date), data: e.count}))
+    const data: number[] = []
+    for (let i = 0; i < datesWithData.length-1; i++) {
+        const el1 = datesWithData[i];
+        const el2 = datesWithData[i+1];
+        data.push(el1.data)
+        const emptyMonths = (el2.date.getMonth() - el1.date.getMonth() + (el2.date.getFullYear() - el2.date.getFullYear()) * 12) - 1
+        for (let i = 0; i < emptyMonths; i++) data.push(0)
+        if (datesWithData.length-2 == i) data.push(el2.data)
+    }
+    const buffer = await OsuGraph(data, { reverse: false })
     return { files: [new MessageAttachment(buffer, "watched_replays.png")], allowedMentions: { repliedUser: false } }
 }
 
