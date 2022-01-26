@@ -19,7 +19,7 @@ const _CheckForNewMaps = async (client: Client, type: string) => {
     const lastCheckDate = new Date(event.LastChecked)
 
     const [beatmaps, err] = await HandlePromise<BeatmapSet[]>(OsuApi.Beatmap.Search({ mode: 0, type: type, silent: true }))
-    const maps = beatmaps.filter((map: BeatmapSet) =>
+    const maps = beatmaps?.filter((map: BeatmapSet) =>
         map.RankedDate > lastCheckDate
     )
 
