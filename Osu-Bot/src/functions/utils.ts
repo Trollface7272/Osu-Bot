@@ -1,8 +1,8 @@
 import { GetUser, RefreshToken } from "@database/users"
 import { iUser } from "@interfaces/database"
 import { GameModes } from "@osuapi/consts"
-import { OsuProfile } from "@osuapi/endpoints/profile"
-import { BestParams, Score } from "@osuapi/endpoints/score"
+import { Profile } from "@osuapi/endpoints/profile"
+import { Score } from "@osuapi/endpoints/score"
 import { Errors } from "@osuapi/error"
 import { OsuApi } from "@osuapi/index"
 import { iScoreHitcounts } from "@osuapi/types/score"
@@ -157,23 +157,18 @@ export const GetOsuToken = async (discordId: string, discordName: string) => {
     return data.osu.token
 }
 
-const GetOsuProfileOptions = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3) => {
+const GetOsuProfileOptions = async (userId: string, Name: string[]=[], Mode: 0 | 1 | 2 | 3) => {
     let [user, err]: [iUser, any] = await HandlePromise(GetUser(userId))
 
-    const profileOptions = { id: Name[0], mode: Mode, self: false, token: user?.osu?.token || undefined }
-    if (Name?.length == 0)
-        if (user?.osu?.token)
+    const profileOptions = { id: Name[0], mode: Mode, self: false, token: user?.osu?.token || undefined, OAuthId: userId }
+    if (Name.length == 0)
+        if (user?.osu?.token) {
             profileOptions.self = true
+            profileOptions.id = user.osu.name
+        }
 
     if (!profileOptions.self && Name?.length == 0) throw { error: ErrorCodes.ProfileNotLinked }
 
-    if (profileOptions.token && user.osu.expireDate.getTime() < Date.now()) {
-        user = await RefreshToken(user._id) as iUser
-        if (!user) throw { error: ErrorCodes.InvalidAccessToken }
-        profileOptions.token = user.osu.token
-    }
-
-    if (profileOptions.self) profileOptions.id = user.osu.name
     return profileOptions
 }
 
@@ -198,16 +193,16 @@ const HandleApiError = (err: any) => {
     }
 }
 
-export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3): Promise<OsuProfile | MessageOptions> => {
+export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3): Promise<Profile.Profile | MessageOptions> => {
     const profileOptions = await GetOsuProfileOptions(userId, Name, Mode)
     const [profile, err] = await HandlePromise(OsuApi.Profile.FromId(profileOptions))
     if (err) return HandleApiError(err)
     return profile
 }
 
-export const GetOsuTopPlays = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3, options: BestParams): Promise<Score | MessageOptions> => {
+export const GetOsuTopPlays = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3, options: Score.BestParams): Promise<Score.Score | MessageOptions> => {
     const profileOptions = await GetOsuProfileOptions(userId, Name, Mode)
-    const [scores, err] = await HandlePromise<Score>(OsuApi.Score.GetBest({ ...profileOptions, ...options }))
+    const [scores, err] = await HandlePromise<Score.Score>(OsuApi.Score.GetBest({ ...profileOptions, ...options }))
     if (err) return HandleApiError(err)
     return scores
 }

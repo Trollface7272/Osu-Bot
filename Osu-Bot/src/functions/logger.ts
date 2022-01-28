@@ -1,7 +1,7 @@
 import consola, { LogLevel } from "consola"
 import { MessageEmbed, TextChannel } from "discord.js"
 
-consola.wrapAll()
+consola.wrapConsole()
 if (process.env.NODE_ENV == "development") consola.level = LogLevel.Verbose
 else consola.level = LogLevel.Info
 let logChannel: TextChannel

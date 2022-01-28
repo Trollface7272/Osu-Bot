@@ -25,9 +25,11 @@ export const GetUser = async ({ userId, name }: { userId: string, name?: string 
     return response
 }
 
-export const SetOsuToken = async (key: string, data: { token: string, refresh: string, expireDate: Date, tokenType: string }, ip: string) => {
+export const SetOsuToken = async (key: string, data: { token: string, refresh: string, expireDate: Date, tokenType: string, scopes?: string }, ip: string) => {
     logger.Log(data)
-    collection.updateOne({ osutempsecret: key }, { $set: { osu: data, ip }, $unset: {osutempsecret: ""} })
+    const user = await collection.findOne({ "osu.secret": key })
+    data.scopes = user.osu.scopes
+    await collection.updateOne({ "osu.secret": key }, { $set: { osu: data, ip } })
 }
 
 export const RefreshOsuToken = async (userId: string, data: { token: string, refresh: string, expireDate: Date, tokenType: string }) => {
@@ -38,12 +40,12 @@ export const RefreshOsuToken = async (userId: string, data: { token: string, ref
 export const onMessage = async (userId: string, isCommand: boolean) => {
     let inc = isCommand ? { messages: 1, commands: 1 } : { messages: 1 }
     //@ts-ignore
-    const updated =  (await collection.updateOne({ _id: userId }, { $inc: inc }))
+    const updated = (await collection.updateOne({ _id: userId }, { $inc: inc }))
     //@ts-ignore
     if (updated.modifiedCount == 0) CreateUser({ userId })
 }
 
-export const addTempKey = (userId: string, key: string) => {
+export const addTempKey = (userId: string, key: string, scopes: string) => {
     //@ts-ignore
-    collection.updateOne({ _id: userId }, {$set: {osutempsecret: key}})
+    collection.updateOne({ _id: userId }, { $set: { osu: { secret: key, scopes } } })
 }

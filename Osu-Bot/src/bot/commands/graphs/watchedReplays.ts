@@ -2,10 +2,10 @@ import { Message, MessageAttachment, MessageOptions } from "discord.js"
 import { GetOsuProfile, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
 import { OsuGraph } from "@functions/canvasUtils"
 import { ErrorHandles } from "@functions/errors"
-import { OsuProfile } from "@osuapi/endpoints/profile"
+import { Profile } from "@osuapi/endpoints/profile"
 
 const replaysGraph = async (userId: string, { Name, Gamemode }: parsedArgs): Promise<MessageOptions> => {
-    const [profile, err] = await HandlePromise<OsuProfile>(GetOsuProfile(userId, Name, Gamemode))
+    const [profile, err] = await HandlePromise<Profile.Profile>(GetOsuProfile(userId, Name, Gamemode))
     if (err) {
         if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
         return ErrorHandles.Unknown(err)

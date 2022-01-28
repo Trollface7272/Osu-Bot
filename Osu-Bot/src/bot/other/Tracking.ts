@@ -6,11 +6,11 @@ import { DateDiff, GetCombo, GetHits, GetOsuTopPlays, HandlePromise } from "@fun
 import { OsuApi } from "@osuapi/index";
 import { Score } from "@osuapi/endpoints/score";
 import { MessageEmbed, TextChannel } from "discord.js";
-import { OsuProfile } from "@osuapi/endpoints/profile";
+import { Profile } from "@osuapi/endpoints/profile";
 
 let offset = 0
 
-const formatTrackingScore = (base: MessageEmbed, score: Score, pp: number) => {
+const formatTrackingScore = (base: MessageEmbed, score: Score.Score, pp: number) => {
     let fcppDisplay = "" 
     let description  = `**[${score.BeatmapSet.Title} [${score.Beatmap.Version}]](${score.ScoreUrl}) +${score.Mods.length > 0 ? score.Mods : "NoMod"}** [${Math.round(score.Beatmap.Stars * 100) / 100}★]\n`
         description += `▸ ${GradeEmotes[score.Grade]} ▸ **${score.Performance}**/${0}pp▸ ${Math.round(score.Accuracy * 10000) / 100}%\n`
@@ -34,7 +34,7 @@ export const RunTracking = async (client: Client) => {
     const channelData = await Promise.all(tracked.channels.map(async (data) => [client.channels.cache.get(data.channelId) || await client.channels.fetch(data.channelId), data.limit]))
     const lastCheckDate = tracked.lastCheck
 
-    const [scores, err] = await HandlePromise<Score[]>(GetOsuTopPlays(null, [tracked.id.toString()], tracked.mode, {offset: 0, limit: 100, }))
+    const [scores, err] = await HandlePromise<Score.Score[]>(GetOsuTopPlays(null, [tracked.id.toString()], tracked.mode, {offset: 0, limit: 100 }))
     if (err) {
         if (err.error && ErrorHandles[err.error]) return
         return ErrorHandles.Unknown(err)
@@ -44,7 +44,7 @@ export const RunTracking = async (client: Client) => {
 
     if (newScores.length === 0) return
 
-    const [profile, err2] = await HandlePromise<OsuProfile>(OsuApi.Profile.FromId({ id: tracked.id.toString(), mode: tracked.mode }))
+    const [profile, err2] = await HandlePromise<Profile.Profile>(OsuApi.Profile.FromId({ id: tracked.id.toString(), mode: tracked.mode }))
     if (err2) {
         if (err.error && ErrorHandles[err.error]) return
         return ErrorHandles.Unknown(err)

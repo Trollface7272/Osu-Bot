@@ -17,7 +17,7 @@ const Link = async (interaction: CommandInteraction) => {
     })
 }
 
-const interactionCallback = (interaction: CommandInteraction) => {
+export const interactionCallback = (interaction: CommandInteraction) => {
     Link(interaction)
 }
 

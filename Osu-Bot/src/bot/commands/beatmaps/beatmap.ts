@@ -1,8 +1,8 @@
 import { ConvertBitModsToMods, formatTime, GetDifficultyEmote } from "@functions/utils";
-import { Beatmap, BeatmapRaw, BeatmapSet } from "@osuapi/endpoints/beatmap";
+import { Beatmaps } from "@osuapi/endpoints/beatmap";
 
 
-export const FormatBeatmap = (beatmap: Beatmap, mods: number) => {
+export const FormatBeatmap = (beatmap: Beatmaps.Beatmap, mods: number) => {
     let description = `**Length:** ${beatmap.Length}${beatmap.DrainLength !== beatmap.Length ? (` (${beatmap.DrainLength} drain)`) : ""} **BPM:** ${beatmap.Bpm} **Mods:** ${ConvertBitModsToMods(mods)}\n`
     description += `**Download:** [map](https://osu.ppy.sh/d/${beatmap.SetId})([no vid](https://osu.ppy.sh/d/${beatmap.SetId}n)) osu://b/${beatmap.SetId}\n`
     description += `**${GetDifficultyEmote(beatmap.GamemodeNum, beatmap.Stars)}${beatmap.Version}**\n`
@@ -14,7 +14,7 @@ export const FormatBeatmap = (beatmap: Beatmap, mods: number) => {
     //description += `○ **${mapDiffs[2].Formatted.AccPerc}%-**${mapDiffs[2].Formatted.Total}`
 }
 
-export const FormatBeatmapSet = (beatmapSet: BeatmapSet) => {
+export const FormatBeatmapSet = (beatmapSet: Beatmaps.BeatmapSet) => {
     const length = beatmapSet.Beatmaps[0].Length
     const drain = beatmapSet.Beatmaps[0].DrainLength
     beatmapSet.Beatmaps.sort((v1, v2) => v1.Stars - v2.Stars)

@@ -16,6 +16,8 @@ export const OnMessage = async (userId: string, guildId: string, isCommand: bool
     await axios.post("http://localhost:727/users/onmessage", { userId, guildId, isCommand, secret: process.env.SECRET }).catch(e => logger.Error(e))
 }
 
+//            |
+//TODO: delet V
 export const RefreshToken = async (userId: string): Promise<iUser|void> => {
     const user = await axios.post("http://localhost:727/users/refreshtoken", { userId, secret: process.env.SECRET }).catch(e => logger.Error(e))
     if (!user || user.status !== 200) return //TODO: handle error

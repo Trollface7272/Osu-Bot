@@ -1,6 +1,6 @@
 import consola from "consola"
 
-consola.wrapAll()
+consola.wrapConsole()
 
 const Log = (...messages: any[]) => {
     console.log(...messages)

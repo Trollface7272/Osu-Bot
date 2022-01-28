@@ -1,22 +1,22 @@
 import { GamemodeNames, GradeEmotes } from "@consts/osu"
 import { ErrorHandles } from "@functions/errors"
-import logger from "@functions/logger"
-import { DateDiff, GetCombo, GetFlagUrl, GetHits, GetOsuTopPlays, GetProfileLink, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
+import { DateDiff, GetCombo, GetFlagUrl, GetHits, GetOsuProfile, GetOsuTopPlays, GetProfileLink, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
 import { OsuApi } from "@osuapi/index"
 import { Score } from "@osuapi/endpoints/score"
 import { randomInt } from "crypto"
 import { CommandInteraction, Message, MessageEmbed, MessageOptions } from "discord.js"
+import { ApiCalculator } from "@osuapi/calculator/calculator"
+import { CalculatorOut } from "@osuapi/calculator/base"
+import { Profile } from "@osuapi/endpoints/profile"
 
 
-const FormatTopPlay = (Gamemode: 0 | 1 | 2 | 3, score: Score): string => {
+const FormatTopPlay = (Gamemode: 0 | 1 | 2 | 3, score: Score.Score, calculated: CalculatorOut): string => {
     const beatmap = score.Beatmap
     const beatmapSet = score.BeatmapSet
 
-    let fcppDisplay = "", description = ""
-    //if (score.MaxCombo < score.MaxCombo - 15 || score.Counts.miss > 0) fcppDisplay = `(${score.FcPerformance.toLocaleString()}pp for ${RoundFixed(score.FcAccuracy)}% FC) `
-    if (score.MaxCombo < beatmap.MaxCombo - 15 || score.Counts.miss > 0) fcppDisplay = `(${1}pp for ${1}% FC) `
-    description += `**${score.Index}. [${beatmapSet.Title} [${beatmap.Version}]](${score.ScoreUrl}) +${score.Mods.length > 0 ? score.Mods.join("") : "NoMod"}** [${Math.round(beatmap.Stars * 100) / 100}★]\n`
-    description += `▸ ${GradeEmotes[score.Grade]} ▸ **${score.Performance}pp** ${fcppDisplay}▸ ${Math.round(score.Accuracy * 10000) / 100}%\n`
+    let  description = ""
+    description += `**${score.Index}. [${beatmapSet.Title} [${beatmap.Version}]](${score.ScoreUrl}) +${score.Mods.length > 0 ? score.Mods.join("") : "NoMod"}** [${Math.round(calculated.difficulty.Star * 100) / 100}★]\n`
+    description += `▸ ${GradeEmotes[score.Grade]} ▸ **${score.Performance}pp**/${Math.round(calculated.performance.total * 1000) / 1000}pp ▸ ${Math.round(score.Accuracy * 10000) / 100}%\n`
     description += `▸ ${score.Score.toLocaleString()} ▸ ${GetCombo(score.MaxCombo, beatmap.MaxCombo, Gamemode)} ▸ [${GetHits(score.Counts, Gamemode)}]\n`
     description += `▸ Score Set ${DateDiff(score.SetAt, new Date(new Date().toLocaleString('en-US', { timeZone: "UTC" })))}Ago\n`
 
@@ -36,12 +36,18 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
         limit = 1
         offset = randomInt(100)
     }
-    let [scores, err2] = await HandlePromise<Score[]>(GetOsuTopPlays(userId, Name, Gamemode, { offset, limit: limit }))
+    const [profile, err] = await HandlePromise<Profile.Profile>(GetOsuProfile(userId, Name, Gamemode))
+    if (err) {
+        if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
+        return ErrorHandles.Unknown(err)
+    }
+    Name = [profile.id.toString()]
+    
+    let [scores, err2] = await HandlePromise<Score.Score[]>(GetOsuTopPlays(userId, Name, Gamemode, { offset, limit: limit }))
     if (err2) {
         if (err2.error && ErrorHandles[err2.error]) return ErrorHandles[err2.error](err2)
         return ErrorHandles.Unknown(err2)
     }
-    const profile = scores[0].User
 
     if (GreaterThan) scores = scores.filter(e => Reversed ? (e.Performance < GreaterThan) : (e.Performance > GreaterThan))
 
@@ -52,10 +58,10 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
     }
 
     if (Specific?.length > 0) {
-        const out: Score[] = []
+        const out: Score.Score[] = []
         const base = Specific[0]
         for (let i = 0; i < Specific.length; i++) {
-            if (scores[Specific[i]-base]) out.push(scores[Specific[i]-base])
+            if (scores[Specific[i] - base]) out.push(scores[Specific[i] - base])
         }
         scores = out
         if (out.length < 1) return ErrorHandles.Unknown(err2)
@@ -71,11 +77,45 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
     maps.map(map => {
         scores.find(el => el.Beatmap.Id === map.Id).Beatmap.MaxCombo = map.MaxCombo
     })
-    let desc = ""
     
-    for (let i = 0; i < Math.min(scores.length, 5); i++) {
-        desc += FormatTopPlay(Gamemode, scores[i])
-    }
+    const outScores = scores.slice(0, Math.min(scores.length, 5))
+    let desc = (await Promise.all(outScores.map(async score => {
+        let calculated: CalculatorOut
+        if (score.MaxCombo < score.MaxCombo - 15 || score.Counts.miss > 0) {
+            let counts = score.Counts
+            counts[300] += counts.miss
+            counts.miss = 0
+            calculated = await ApiCalculator.Calculators[Gamemode].Calculate(score.Beatmap, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
+        } else {
+            let counts = score.Counts
+            counts[300] += counts[50] + counts[100]
+            counts.miss = 0
+            counts[50] = 0
+            counts[100] = 0
+            calculated = await ApiCalculator.Calculators[Gamemode].Calculate(score.Beatmap, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
+        }
+        if (calculated.performance.total < score.Performance) calculated.performance.total = score.Performance
+        return FormatTopPlay(Gamemode, score, calculated)
+    }))).join("")
+    /*for (let i = 0; i < Math.min(scores.length, 5); i++) {
+        const score = scores[i]
+        let calculated: CalculatorOut
+        if (score.MaxCombo < score.MaxCombo - 15 || score.Counts.miss > 0) {
+            let counts = score.Counts
+            counts[300] += counts.miss
+            counts.miss = 0
+            calculated = await ApiCalculator.Calculators[Gamemode].Calculate(score.Beatmap, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
+        } else {
+            let counts = score.Counts
+            counts[300] += counts[50] + counts[100]
+            counts.miss = 0
+            counts[50] = 0
+            counts[100] = 0
+            calculated = await ApiCalculator.Calculators[Gamemode].Calculate(score.Beatmap, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
+        }
+        if (calculated.performance.total < score.Performance) calculated.performance.total = score.Performance
+        desc += FormatTopPlay(Gamemode, score, calculated)
+    }*/
 
 
     const embed = new MessageEmbed()

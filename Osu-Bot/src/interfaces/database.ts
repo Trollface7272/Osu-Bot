@@ -8,9 +8,11 @@ export interface iUser {
 
 export interface iUserOsu {
     token?: string,
+    tokenType?: string
     refresh?: string,
     name?: string,
     expireDate?: Date
+    scopes?: string
 }
 
 export interface iGuild {

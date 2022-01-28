@@ -2,9 +2,10 @@
   "name": "osu-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "exports": "./src/index.js",
+  "type":"module",
   "scripts": {
-    "test": "ts-node-dev --respawn --transpile-only --poll ./src/index.ts",
+    "test": "ts-node-dev --input-type module --respawn --transpile-only --poll ./src/index.ts",
     "lint": "prettier --write .",
     "build": "tsc"
   },

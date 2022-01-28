@@ -3,13 +3,14 @@ import { FormatBeatmapSet } from "@bot/commands/beatmaps/beatmap";
 import { GetEvents, UpdateEvent } from "@database/events";
 import logger from "@functions/logger";
 import { HandlePromise } from "@functions/utils";
-import { BeatmapSet } from "@osuapi/endpoints/beatmap";
+import { Beatmaps } from "@osuapi/endpoints/beatmap";
 import { OsuApi } from "@osuapi/index";
 import { MessageEmbed, TextChannel } from "discord.js";
 
 export const CheckForNewMaps = async (client: Client) => {
-    await Promise.all([_CheckForNewMaps(client, "ranked"),
-    _CheckForNewMaps(client, "qualified")])
+    const [, err] = await HandlePromise(Promise.all([_CheckForNewMaps(client, "ranked"),
+    _CheckForNewMaps(client, "qualified")]))
+    if (err) console.error(err)
 }
 const _CheckForNewMaps = async (client: Client, type: string) => {
     const event = await GetEvents(type)
@@ -18,12 +19,13 @@ const _CheckForNewMaps = async (client: Client, type: string) => {
     const channelData = await Promise.all(event.RegisteredChannels.map(async (data) => [client.channels.cache.get(data.id) || await client.channels.fetch(data.id), data.mode]))
     const lastCheckDate = new Date(event.LastChecked)
 
-    const [beatmaps, err] = await HandlePromise<BeatmapSet[]>(OsuApi.Beatmap.Search({ mode: 0, type: type, silent: true }))
-    const maps = beatmaps?.filter((map: BeatmapSet) =>
+    const [beatmaps, err] = await HandlePromise<Beatmaps.BeatmapSet[]>(OsuApi.Beatmap.Search({ mode: 0, type: type }))
+    if (err) console.error(err)
+    const maps = beatmaps?.filter((map: Beatmaps.BeatmapSet) =>
         map.RankedDate > lastCheckDate
     )
 
-    if (maps.length === 0) return
+    if (maps?.length === 0) return
 
     let newest = lastCheckDate
     maps.map(map => { if (newest < map.RankedDate) newest = map.RankedDate })

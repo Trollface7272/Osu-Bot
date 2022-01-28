@@ -1,12 +1,12 @@
 import { TrackUser as TrackUserDb } from "@database/track"
 import { ErrorHandles } from "@functions/errors"
 import { GetOsuProfile, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
-import { OsuProfile } from "@osuapi/endpoints/profile"
+import { Profile } from "@osuapi/endpoints/profile"
 import { Message, PermissionString } from "discord.js"
 
 
 const TrackUser = async (userId: string, channelId: string, { Name, Gamemode, Specific }: parsedArgs) => {
-    const [profile, err] = await HandlePromise<OsuProfile>(GetOsuProfile(userId, Name, Gamemode))
+    const [profile, err] = await HandlePromise<Profile.Profile>(GetOsuProfile(userId, Name, Gamemode))
     if (err) {
         if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err) 
         return ErrorHandles.Unknown(err)
