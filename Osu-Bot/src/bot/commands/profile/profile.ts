@@ -1,11 +1,11 @@
 import { ErrorCodes, ErrorHandles } from "@functions/errors"
 import { GetOsuProfile, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
-import { OsuProfile } from "@osuapi/endpoints/profile"
+import { Profile as _Profile } from "@osuapi/endpoints/profile"
 import { GamemodeNames } from "@consts/osu"
 import { GuildMember, Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOption, MessageSelectOptionData, SelectMenuInteraction } from "discord.js"
 
 const Profile = async (member: GuildMember, {Name, Gamemode}: parsedArgs): Promise<MessageOptions> => {
-    const [profile, err] = await HandlePromise<OsuProfile>(GetOsuProfile(member.user.id, Name, Gamemode))
+    const [profile, err] = await HandlePromise<_Profile.Profile>(GetOsuProfile(member.user.id, Name, Gamemode))
     if (err) {
         if (err.error == ErrorCodes.ProfileNotLinked) return ErrorHandles.ProfileNotLinked()
         return ErrorHandles.Unknown(err)
