@@ -2,10 +2,10 @@ import { connection } from "mongoose"
 
 const collection = () => connection.collection("tracking")
 
-export const AddToTracking = async (id: number, name: string, channelId: string, mode: 0 | 1 | 2 | 3, limit: number) => {
+export const AddToTracking = async (id: number, name: string, channelId: string, mode: 0 | 1 | 2 | 3, limit: number, performance: number) => {
     const d = await collection().findOne({ id, mode })
-    if (d) return collection().updateOne({ _id: d._id }, { $addToSet: { channels: { id: channelId, limit } }, $set: { name } })
-    return collection().insertOne({ id, name, channels: [{ channelId, limit }], mode, lastCheck: new Date() })
+    if (d) return collection().updateOne({ _id: d._id }, { $addToSet: { channels: { id: channelId, limit } }, $set: { name, performance } })
+    return collection().insertOne({ id, name, channels: [{ channelId, limit }], mode, lastCheck: new Date(), performance })
 }
 
 export const GetTracked = async (offset: number) => {

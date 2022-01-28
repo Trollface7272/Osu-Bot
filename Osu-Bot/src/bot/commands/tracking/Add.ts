@@ -14,7 +14,7 @@ const TrackUser = async (userId: string, channelId: string, { Name, Gamemode, Sp
 
     if (!Specific[0] || Specific[0] > 100 || Specific[0] < 1) Specific[0] = 100
 
-    const [res, err2] = await HandlePromise(TrackUserDb(profile.id, profile.Username, channelId, Gamemode, Specific[0]))
+    const [res, err2] = await HandlePromise(TrackUserDb(profile.id, profile.Username, channelId, Gamemode, Specific[0], profile.Performance))
     if (!err2) return "👍"
     else return "👎"
 }

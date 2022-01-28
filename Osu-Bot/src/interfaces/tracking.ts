@@ -7,4 +7,5 @@ export interface TrackedUser {
     mode: 0 | 1 | 2 | 3
     isLast: boolean
     lastCheck: Date
+    performance: number
 }

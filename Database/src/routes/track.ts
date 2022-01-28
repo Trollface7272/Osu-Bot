@@ -7,10 +7,10 @@ const router = Router()
 router.use(ValidateSecret)
 
 router.post("/add", async (req: Request, res: Response) => {
-    const { id, name, channelId, mode, limit } = req.body
+    const { id, name, channelId, mode, limit, performance } = req.body
 
-    if (id == null || name == null || channelId == null || mode == null || limit == null) return res.status(400).send()
-    await AddToTracking(id, name, channelId, mode, limit)
+    if (id == null || name == null || channelId == null || mode == null || limit == null || performance == null) return res.status(400).send()
+    await AddToTracking(id, name, channelId, mode, limit, performance)
     res.json()
 })
 

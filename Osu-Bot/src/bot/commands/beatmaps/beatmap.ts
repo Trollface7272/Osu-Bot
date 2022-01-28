@@ -1,4 +1,4 @@
-import { ConvertBitModsToMods, GetDifficultyEmote } from "@functions/utils";
+import { ConvertBitModsToMods, formatTime, GetDifficultyEmote } from "@functions/utils";
 import { Beatmap, BeatmapRaw, BeatmapSet } from "@osuapi/endpoints/beatmap";
 
 
@@ -19,7 +19,7 @@ export const FormatBeatmapSet = (beatmapSet: BeatmapSet) => {
     const drain = beatmapSet.Beatmaps[0].DrainLength
     beatmapSet.Beatmaps.sort((v1, v2) => v1.Stars - v2.Stars)
     let description = `**[${beatmapSet.Artist} - ${beatmapSet.Title}](${`https://osu.ppy.sh/s/${beatmapSet.Id}`})** by **[${beatmapSet.Mapper}](https://osu.ppy.sh/u/${beatmapSet.MapperId})**\n`
-    description += `**Length:** ${Math.floor(length / 60)}:${length % 60}${drain !== length ? (` (${Math.floor(drain / 60)}:${drain % 60} drain)`) : ""} **BPM:** ${beatmapSet.Bpm}\n`
+    description += `**Length:** ${Math.floor(length / 60)}:${formatTime(length % 60)}${drain !== length ? (` (${Math.floor(drain / 60)}:${formatTime(drain % 60)} drain)`) : ""} **BPM:** ${beatmapSet.Bpm}\n`
     description += `**Download:** [map](https://osu.ppy.sh/d/${beatmapSet.Id})([no vid](https://osu.ppy.sh/d/${beatmapSet.Id}n)) osu://b/${beatmapSet.Id}\n`
     description += `${beatmapSet.Beatmaps.map(beatmap => `${GetDifficultyEmote(beatmap.GamemodeNum, beatmap.Stars)}\`${beatmap.Version}\` [${beatmap.Stars}\\*]`).join("\n")}\n`
 

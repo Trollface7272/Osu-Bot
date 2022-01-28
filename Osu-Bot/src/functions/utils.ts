@@ -311,3 +311,8 @@ export const GetDifficultyEmote = (mode: 0 | 1 | 2 | 3, star: number) => {
     if (star > 6.5) difficulty++
     return `<:Black:${DifficultyEmoteIds[mode][difficulty]}>`
 }
+
+export const formatTime = (num: number) =>{
+    if (num < 10) return "0" + num
+    return num
+}
