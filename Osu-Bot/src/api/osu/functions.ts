@@ -1,4 +1,4 @@
-import { GetUser } from "@database/users"
+import { GetUser, RefreshToken } from "@database/users"
 import { OAuth2Manager } from "api/oAuth2/oAuth"
 import axios, { AxiosRequestConfig } from "axios"
 
@@ -43,7 +43,7 @@ export namespace Utils {
         if (!token) {
             const user = await GetUser(OAuthId)
             if (user?.osu?.token) {
-                token = OAuth.UserCredentials(OAuthId, user.osu.scopes, user.osu.tokenType, user.osu.refresh, user.osu.token, user.osu.expireDate)
+                token = OAuth.UserCredentials(OAuthId, user.osu.scopes, user.osu.tokenType, user.osu.refresh, user.osu.token, user.osu.expireDate, RefreshToken)
             }
         }
         

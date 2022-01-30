@@ -18,8 +18,8 @@ export const OnMessage = async (userId: string, guildId: string, isCommand: bool
 
 //            |
 //TODO: delet V
-export const RefreshToken = async (userId: string): Promise<iUser|void> => {
-    const user = await axios.post("http://localhost:727/users/refreshtoken", { userId, secret: process.env.SECRET }).catch(e => logger.Error(e))
+export const RefreshToken = async (id: string, accessToken: string, tokenType: string, refreshToken: string, expires: Date, scopes: string): Promise<iUser|void> => {
+    const user = await axios.post("http://localhost:727/users/refreshtoken", { id, accessToken, tokenType, refreshToken, expires, scopes, secret: process.env.SECRET }).catch(e => logger.Error(e))
     if (!user || user.status !== 200) return //TODO: handle error
     return user.data
 }

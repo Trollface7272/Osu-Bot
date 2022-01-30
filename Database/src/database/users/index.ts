@@ -32,7 +32,7 @@ export const SetOsuToken = async (key: string, data: { token: string, refresh: s
     await collection.updateOne({ "osu.secret": key }, { $set: { osu: data, ip } })
 }
 
-export const RefreshOsuToken = async (userId: string, data: { token: string, refresh: string, expireDate: Date, tokenType: string }) => {
+export const RefreshOsuToken = async (data: { id: string, accessToken: string, tokenType: string, refreshToken: string, expires: Date, scopes: string, name: number }) => {
     //@ts-ignore
     const resp = await collection.updateOne({ _id: userId }, { $set: { osu: data } })
 }

@@ -214,6 +214,7 @@ export namespace Profile {
             logger.Debug(endpoint)
             const [data, err]: [iUserRaw, AxiosError] = await Utils.HandlePromise<iUserRaw>(Utils.Get(endpoint, {}, { Authorization: await Utils.GetUserToken(this.OAuth, OAuthId) }, {}))
             if (err) {
+                if (!err.response) throw new OsuApiError(Errors.Unknown, err)
                 if (err.response.status == 401) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
                 if (err.response.status == 403) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
                 if (err.response.status == 404) throw new OsuApiError(Errors.WrongEndpoint, "Provided invalid api endpoint")

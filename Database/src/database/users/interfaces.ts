@@ -3,5 +3,5 @@ export interface iUser {
     name: string,
     messages: number,
     commands: number,
-    osu: { token?: string, refresh?: string, name?: string, expireDate: Date, tokenType: "Bearer" }
+    osu: { id: string, accessToken: string, tokenType: string, refreshToken: string, expires: Date, scopes: string, name: number }
 }

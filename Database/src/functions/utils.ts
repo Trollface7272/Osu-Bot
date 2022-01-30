@@ -8,13 +8,13 @@ export const ValidateSecret = (req: Request, res: Response, next: NextFunction) 
     return res.status(403).send()
 }
 
-export const RefreshToken = async (userId: string) => {
-    const user = await GetUser({userId})
+export const RefreshToken = async (data: {id: string, accessToken: string, tokenType: string, refreshToken: string, expires: Date, scopes: string, name: number}) => {
+    const user = await GetUser({ userId: data.id })
     if (!user) return //TODO: Handle error
     const resp = await axios.post("https://osu.ppy.sh/oauth/token", {
         client_id: process.env.OSUID,
         client_secret: process.env.OSU,
-        refresh_token: user.osu.refresh,
+        refresh_token: user.osu.refreshToken,
         grant_type: "refresh_token",
         scope: "identify public"
     }, { validateStatus: () => true }).catch(err => logger.Error(err))
@@ -29,15 +29,10 @@ export const RefreshToken = async (userId: string) => {
         }
     })).data
     
-    const data = {
-        tokenType: rawData.token_type,
-        expireDate: new Date(rawData.expires_in * 1000 + Date.now()),
-        token: rawData.access_token,
-        refresh: rawData.refresh_token,
-        name: osuUser.id
-    }
+    data.name = osuUser.id
+
     logger.Log(data)
-    RefreshOsuToken(userId, data)
+    RefreshOsuToken(data)
     user.osu = data
     return user
 }

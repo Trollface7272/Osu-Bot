@@ -24,10 +24,11 @@ const Debug = (...messages: any[]) => {
 
 const Error = (...messages: any[]) => {
     console.error(...messages)
+    const msgs = messages.map(m => typeof m === "object" ? JSON.stringify(m) : m)
     logChannel?.send({
         embeds: [new MessageEmbed({
             color: "RANDOM",
-            description: messages.join("\n")
+            description: msgs.join("\n")
         })]
     })
 }
