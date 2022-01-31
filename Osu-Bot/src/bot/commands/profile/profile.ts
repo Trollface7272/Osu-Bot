@@ -1,26 +1,37 @@
 import { ErrorCodes, ErrorHandles } from "@functions/errors"
-import { GetOsuProfile, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
+import { calcBonusPp, formatScore, GetOsuProfile, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
 import { Profile as _Profile } from "@osuapi/endpoints/profile"
 import { GamemodeNames } from "@consts/osu"
 import { GuildMember, Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOption, MessageSelectOptionData, SelectMenuInteraction } from "discord.js"
+import { Score } from "@osuapi/endpoints/score"
+import { OsuApi } from "@osuapi/index"
 
-const Profile = async (member: GuildMember, {Name, Gamemode}: parsedArgs): Promise<MessageOptions> => {
+const Profile = async (member: GuildMember, { Name, Gamemode }: parsedArgs): Promise<MessageOptions> => {
     const [profile, err] = await HandlePromise<_Profile.Profile>(GetOsuProfile(member.user.id, Name, Gamemode))
     if (err) {
         if (err.error == ErrorCodes.ProfileNotLinked) return ErrorHandles.ProfileNotLinked()
         return ErrorHandles.Unknown(err)
     }
+
+    const [best, err2] = await HandlePromise<Score.Score[]>(OsuApi.Score.GetBest({ id: profile.id.toString(), mode: Gamemode, limit: 100, offset: 0, OAuthId: member.user.id }))
+    if (err2) {
+        if (err2.error == ErrorCodes.ProfileNotLinked) return ErrorHandles.ProfileNotLinked()
+        return ErrorHandles.Unknown(err2)
+    }
+
+    const bonuspp = Math.round(calcBonusPp(profile.Performance, profile.PlayCount, best) * 100) / 100
     const embed = new MessageEmbed()
         .setColor("RANDOM")
         .setThumbnail(profile.Avatar)
         .setAuthor(`${GamemodeNames[Gamemode]} Profile for ${profile.Username}`, profile.Country.flag, profile.ProfileUrl)
         .setDescription(
-`\
+            `\
 ▸ **Rank:** #${profile.Rank.Global.toLocaleString()} (${profile.Country.code}#${profile.Rank.Country.toLocaleString()})
 ▸ **Level:** ${profile.Level.Current} (${profile.Level.Progress}%)
-▸ **Performance:** ${profile.Performance.toLocaleString()}pp
+▸ **Performance:** ${profile.Performance.toLocaleString()}pp (${bonuspp} bonus)
 ▸ **Accuracy:** ${Math.round(profile.Accuracy * 100) / 100}%
-▸ **Playcount:** ${profile.PlayCount} (${Math.round(profile.PlayTime/60/60)} hours)\
+▸ **Score:** ${formatScore(profile.Score.Ranked)} (${(formatScore(profile.Score.Total))})
+▸ **Playcount:** ${profile.PlayCount.toLocaleString()} (${Math.round(profile.PlayTime / 60 / 60)} hours)\
 `
         )
         .setImage("https://i.imgur.com/g1pszyN.png")
@@ -67,7 +78,7 @@ const messageCallback = async (message: Message, args: string[]) => {
 }
 
 const selectMenuInteraction = async (interaction: SelectMenuInteraction) => {
-    const profile = await Profile(interaction.member as GuildMember, { Name: [interaction.customId.split(";")[1]], Gamemode: parseInt(interaction.values[0]) as 0|1|2|3})
+    const profile = await Profile(interaction.member as GuildMember, { Name: [interaction.customId.split(";")[1]], Gamemode: parseInt(interaction.values[0]) as 0 | 1 | 2 | 3 })
     profile.allowedMentions = {
         repliedUser: false
     }

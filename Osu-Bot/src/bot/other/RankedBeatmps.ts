@@ -1,11 +1,22 @@
 import Client from "@bot/client";
-import { FormatBeatmapSet } from "@bot/commands/beatmaps/beatmap";
 import { GetEvents, UpdateEvent } from "@database/events";
 import logger from "@functions/logger";
-import { HandlePromise } from "@functions/utils";
+import { formatTime, GetDifficultyEmote, HandlePromise } from "@functions/utils";
 import { Beatmaps } from "@osuapi/endpoints/beatmap";
 import { OsuApi } from "@osuapi/index";
 import { MessageEmbed, TextChannel } from "discord.js";
+
+const FormatBeatmapSet = (beatmapSet: Beatmaps.BeatmapSet) => {
+    const length = beatmapSet.Beatmaps[0].Length
+    const drain = beatmapSet.Beatmaps[0].DrainLength
+    beatmapSet.Beatmaps.sort((v1, v2) => v1.Stars - v2.Stars)
+    let description = `**[${beatmapSet.Artist} - ${beatmapSet.Title}](${`https://osu.ppy.sh/s/${beatmapSet.Id}`})** by **[${beatmapSet.Mapper}](https://osu.ppy.sh/u/${beatmapSet.MapperId})**\n`
+    description += `**Length:** ${Math.floor(length / 60)}:${formatTime(length % 60)}${drain !== length ? (` (${Math.floor(drain / 60)}:${formatTime(drain % 60)} drain)`) : ""} **BPM:** ${beatmapSet.Bpm}\n`
+    description += `**Download:** [map](https://osu.ppy.sh/d/${beatmapSet.Id})([no vid](https://osu.ppy.sh/d/${beatmapSet.Id}n)) osu://b/${beatmapSet.Id}\n`
+    description += `${beatmapSet.Beatmaps.map(beatmap => `${GetDifficultyEmote(beatmap.GamemodeNum, beatmap.Stars)}\`${beatmap.Version}\` [${beatmap.Stars}\\*]`).join("\n")}\n`
+
+    return description
+}
 
 export const CheckForNewMaps = async (client: Client) => {
     const [, err] = await HandlePromise(Promise.all([_CheckForNewMaps(client, "ranked"),

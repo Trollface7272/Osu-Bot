@@ -35,6 +35,8 @@ export namespace Beatmaps {
         public url: string
         public checksum: string
         public max_combo: number
+        public beatmapset: BeatmapSetRaw
+        public failtimes: {exit: number[], fail: number[]}
     }
 
     export class BeatmapSetRaw {
@@ -124,6 +126,8 @@ export namespace Beatmaps {
         public get Url() { return this.raw.url }
         public get Hash() { return this.raw.checksum }
         public get MaxCombo() { return this.raw.max_combo }
+        public get BeatmapSet() { return new BeatmapSet(this.raw.beatmapset) }
+        public get FailTimes() { return this.raw.failtimes }
         public set MaxCombo(value) { this.raw.max_combo = value }
 
         constructor(raw: BeatmapRaw) {
@@ -187,10 +191,14 @@ export namespace Beatmaps {
 
     export interface BeatmapSearchOptions {
         mode?: 0 | 1 | 2 | 3
-        token?: string
         type?: string
         text?: string
         OAuthId?: string
+    }
+
+    export interface BeatmapByIdOptions {
+        OAuthId?: string
+        id: string|number
     }
 
     export class Api {
@@ -227,6 +235,20 @@ export namespace Beatmaps {
             if (!data || !data.beatmapsets || data.beatmapsets.length == 0) throw new OsuApiError(Errors.BeatmapDoesNotExist, "Selecred beatmap does not exist")
 
             return data.beatmapsets.map(map => new BeatmapSet(map))
+        }
+        public async ById({ id, OAuthId}) {
+            const endpoint = `${v2ApiLink}/beatmaps/${id}`
+            
+            const [data, err] = await Utils.HandlePromise<BeatmapRaw>(Utils.Get(endpoint, {}, { Authorization: await Utils.GetUserToken(this.OAuth, OAuthId)}))
+            if (err) {
+                if (!err.response) throw new OsuApiError(Errors.Unknown, err)
+                if (err.response.status == 401) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+                if (err.response.status == 403) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+                if (err.response.status == 404) throw new OsuApiError(Errors.WrongEndpoint, "Provided invalid api endpoint")
+                throw new OsuApiError(Errors.Unknown, err)
+            }
+
+            return new Beatmap(data)
         }
     }
 }

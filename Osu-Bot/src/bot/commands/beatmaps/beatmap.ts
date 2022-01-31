@@ -1,27 +1,66 @@
-import { ConvertBitModsToMods, formatTime, GetDifficultyEmote } from "@functions/utils";
+import { ConvertBitModsToMods, FindMapInConversation, formatTime, GetDifficultyEmote, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils";
+import { OsuApi } from "@osuapi/index";
 import { Beatmaps } from "@osuapi/endpoints/beatmap";
+import { GuildMember, Interaction, Message, MessageAttachment, MessageEmbed, MessageOptions } from "discord.js";
+import { ErrorHandles } from "@functions/errors";
+import { BeatmapFailTimes } from "@functions/canvasUtils";
 
 
 export const FormatBeatmap = (beatmap: Beatmaps.Beatmap, mods: number) => {
-    let description = `**Length:** ${beatmap.Length}${beatmap.DrainLength !== beatmap.Length ? (` (${beatmap.DrainLength} drain)`) : ""} **BPM:** ${beatmap.Bpm} **Mods:** ${ConvertBitModsToMods(mods)}\n`
+    let description = `**Length:** ${Math.floor(beatmap.Length / 60)}:${formatTime(beatmap.Length % 60)}${beatmap.DrainLength !== beatmap.Length ? (` (${Math.floor(beatmap.DrainLength / 60)}:${formatTime(beatmap.DrainLength % 60)} drain)`) : ""} **BPM:** ${beatmap.Bpm} **Mods:** ${ConvertBitModsToMods(mods)}\n`
     description += `**Download:** [map](https://osu.ppy.sh/d/${beatmap.SetId})([no vid](https://osu.ppy.sh/d/${beatmap.SetId}n)) osu://b/${beatmap.SetId}\n`
     description += `**${GetDifficultyEmote(beatmap.GamemodeNum, beatmap.Stars)}${beatmap.Version}**\n`
     description += `▸**Difficulty:** ${beatmap.Stars}★ ▸**Max Combo:** x${beatmap.MaxCombo}\n`
-    description += `▸**AR:** ${beatmap.Difficulty.AR} ▸**OD:** ${beatmap.Difficulty.OD} ▸**HP:** ${beatmap.Difficulty.HP} ▸**CS:** ${beatmap.Difficulty.CS}\n`
+    description += `▸**AR:** ${beatmap.Difficulty.AR.toFixed(1)} ▸**OD:** ${beatmap.Difficulty.OD.toFixed(1)} ▸**HP:** ${beatmap.Difficulty.HP.toFixed(1)} ▸**CS:** ${beatmap.Difficulty.CS.toFixed(1)}\n`
     //description += `▸**PP:** `
     //description += `○ **${mapDiffs[0].Formatted.AccPerc}%-**${mapDiffs[0].Formatted.Total}`
     //description += `○ **${mapDiffs[1].Formatted.AccPerc}%-**${mapDiffs[1].Formatted.Total}`
     //description += `○ **${mapDiffs[2].Formatted.AccPerc}%-**${mapDiffs[2].Formatted.Total}`
+    return description
 }
 
-export const FormatBeatmapSet = (beatmapSet: Beatmaps.BeatmapSet) => {
-    const length = beatmapSet.Beatmaps[0].Length
-    const drain = beatmapSet.Beatmaps[0].DrainLength
-    beatmapSet.Beatmaps.sort((v1, v2) => v1.Stars - v2.Stars)
-    let description = `**[${beatmapSet.Artist} - ${beatmapSet.Title}](${`https://osu.ppy.sh/s/${beatmapSet.Id}`})** by **[${beatmapSet.Mapper}](https://osu.ppy.sh/u/${beatmapSet.MapperId})**\n`
-    description += `**Length:** ${Math.floor(length / 60)}:${formatTime(length % 60)}${drain !== length ? (` (${Math.floor(drain / 60)}:${formatTime(drain % 60)} drain)`) : ""} **BPM:** ${beatmapSet.Bpm}\n`
-    description += `**Download:** [map](https://osu.ppy.sh/d/${beatmapSet.Id})([no vid](https://osu.ppy.sh/d/${beatmapSet.Id}n)) osu://b/${beatmapSet.Id}\n`
-    description += `${beatmapSet.Beatmaps.map(beatmap => `${GetDifficultyEmote(beatmap.GamemodeNum, beatmap.Stars)}\`${beatmap.Version}\` [${beatmap.Stars}\\*]`).join("\n")}\n`
+const Map = async (member: GuildMember, options: parsedArgs): Promise<MessageOptions> => {
+    const [beatmap, err] = await HandlePromise<Beatmaps.Beatmap>(OsuApi.Beatmap.ById({ id: options.Map, OAuthId: member.user.id }))
+    if (err) {
+        if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
+        return ErrorHandles.Unknown(err)
+    }
+    let description = FormatBeatmap(beatmap, options.Mods)
 
-    return description
+    const failTimes = new MessageAttachment(await BeatmapFailTimes(beatmap.FailTimes.fail, []), "failtimes.jpg")
+    const embed = new MessageEmbed()
+        .setAuthor(`${beatmap.BeatmapSet.Artist} - ${beatmap.BeatmapSet.Title} by ${beatmap.BeatmapSet.Mapper}`, ``, beatmap.Url)
+        .setThumbnail(beatmap.Url)
+        .setDescription(description)
+        .setFooter(`${beatmap.BeatmapSet.Status} | ${beatmap.BeatmapSet.FavouritedCount} ❤︎ ${beatmap.BeatmapSet.Ranked > 0 ? ("| Approved " + new Date(beatmap.BeatmapSet.RankedDate).toISOString().slice(0, 10).replaceAll("-", " ")) : ""}`)
+        .setImage("attachment://failtimes.jpg")
+
+    return { embeds: [embed], files: [failTimes], allowedMentions: { repliedUser: false } }
+}
+
+
+const messageCallback = async (message: Message, args: string[]) => {
+    const params = ParseArgs(args, message.content.toLocaleLowerCase().split(" ")[0])
+    if (params.Name.length > 0) params.Map = params.Name[0]
+    else params.Map = await FindMapInConversation(message.channel)
+    const msg = await Map(message.member, params)
+    message.reply(msg).catch(err => null)
+}
+
+const interactionCallback = (interaction: Interaction) => {
+
+}
+
+
+
+
+const name = ["map", "beatmap", "m"]
+export const messageCommand = {
+    name,
+    callback: messageCallback
+}
+
+export const interactionCommand = {
+    name: "osu profile",
+    callback: interactionCallback
 }

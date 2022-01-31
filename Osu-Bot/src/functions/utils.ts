@@ -1,12 +1,13 @@
 import { GetUser, RefreshToken } from "@database/users"
 import { iUser } from "@interfaces/database"
+import { BitModsFromString } from "@osuapi/calculator/base"
 import { GameModes } from "@osuapi/consts"
 import { Profile } from "@osuapi/endpoints/profile"
 import { Score } from "@osuapi/endpoints/score"
 import { Errors } from "@osuapi/error"
 import { OsuApi } from "@osuapi/index"
 import { iScoreHitcounts } from "@osuapi/types/score"
-import { MessageEmbed, MessageOptions } from "discord.js"
+import { MessageEmbed, MessageOptions, TextBasedChannels } from "discord.js"
 import { ErrorCodes } from "./errors"
 import logger from "./logger"
 
@@ -17,16 +18,6 @@ const DifficultyEmoteIds = [
     ["858310914922381343", "858310915279290398", "858310915053322251", "858310914959605763", "858310915241803796", "858310915266445322"],
 ]
 
-export interface parsedArgs {
-    Name?: string[]
-    Gamemode?: 0 | 1 | 2 | 3
-    GreaterThan?: number
-    Best?: boolean
-    Reversed?: boolean
-    Specific?: number[]
-    Random?: boolean
-}
-
 export const Mods = {
     Bit: {
         None: 0,
@@ -36,7 +27,7 @@ export const Mods = {
         Hidden: 1 << 3,
         HardRock: 1 << 4,
         SuddenDeath: 1 << 5,
-        DoubleTime: 1 << 6,
+        letTime: 1 << 6,
         Relax: 1 << 7,
         HalfTime: 1 << 8,
         Nightcore: 1 << 9,
@@ -70,7 +61,7 @@ export const Mods = {
         Hidden: "HD",
         HardRock: "HR",
         SuddenDeath: "SD",
-        DoubleTime: "DT",
+        letTime: "DT",
         Relax: "RX",
         HalfTime: "HT",
         Nightcore: "NC",
@@ -105,8 +96,20 @@ const CommandGamemodes = [
     ["mania"]
 ]
 
+export interface parsedArgs {
+    Name?: string[]
+    Gamemode?: 0 | 1 | 2 | 3
+    GreaterThan?: number
+    Best?: boolean
+    Reversed?: boolean
+    Specific?: number[]
+    Random?: boolean
+    Map?: string
+    Mods?: number
+}
+
 export const ParseArgs = (args: string[], command: string): parsedArgs => {
-    let out: parsedArgs = { Name: [], Gamemode: 0, Specific: [] }
+    let out: parsedArgs = { Name: [], Gamemode: 0, Specific: [], Mods: 0 }
     CommandGamemodes.map((e, index) => {
         e.map(el => { if (el.includes(command)) out.Gamemode = index as 0 | 1 | 2 | 3 })
     })
@@ -142,12 +145,35 @@ export const ParseArgs = (args: string[], command: string): parsedArgs => {
                 const num = parseInt(el, 10)
                 if (!isNaN(num) && num <= 100 && num > 0) {
                     out.Specific.push(num)
+                } else if(el.startsWith("+")) {
+                    const mods = el.slice(1)
+                    out.Mods = BitModsFromString(mods)
                 } else out.Name.push(el)
 
 
         }
     }
     return out
+}
+
+export const FindMapInConversation = async (channel: TextBasedChannels): Promise<string> => {
+    const messages = await channel.messages.fetch({ limit: 50 })
+    let map: string
+    messages.forEach(msg => {
+        if (msg.embeds.length < 1 || map) return
+
+        if (msg.embeds[0].author?.url?.startsWith("https://osu.ppy.sh/b/")) {
+            map = map || msg.embeds[0].author && msg.embeds[0].author.url.split("https://osu.ppy.sh/b/")[1]
+            map = map.replace(/[)]/g, "")
+            return map
+        } else if (msg.embeds[0].description?.includes("https://osu.ppy.sh/b/")) {
+            map = map || msg.embeds[0].description.split("https://osu.ppy.sh/b/", 2)[1].split(")")[0]
+            map = map.replace(/[)]/g, "")
+            return map
+        }
+
+    })
+    return map || "Not Found"
 }
 
 export const GetOsuToken = async (discordId: string, discordName: string) => {
@@ -157,7 +183,7 @@ export const GetOsuToken = async (discordId: string, discordName: string) => {
     return data.osu.token
 }
 
-const GetOsuProfileOptions = async (userId: string, Name: string[]=[], Mode: 0 | 1 | 2 | 3) => {
+const GetOsuProfileOptions = async (userId: string, Name: string[] = [], Mode: 0 | 1 | 2 | 3) => {
     let [user, err]: [iUser, any] = await HandlePromise(GetUser(userId))
 
     const profileOptions = { id: Name[0], mode: Mode, self: false, token: user?.osu?.token || undefined, OAuthId: userId }
@@ -281,7 +307,7 @@ export const ConvertBitModsToMods = (mods: number): string => {
 
     let resultMods = ""
     if (mods & Mods.Bit.Perfect) mods &= ~Mods.Bit.SuddenDeath
-    if (mods & Mods.Bit.Nightcore) mods &= ~Mods.Bit.DoubleTime
+    if (mods & Mods.Bit.Nightcore) mods &= ~Mods.Bit.letTime
     for (const mod in Mods.Bit) {
         if (Mods.Bit[mod] & mods)
             resultMods += Mods.Names[mod]
@@ -307,7 +333,64 @@ export const GetDifficultyEmote = (mode: 0 | 1 | 2 | 3, star: number) => {
     return `<:Black:${DifficultyEmoteIds[mode][difficulty]}>`
 }
 
-export const formatTime = (num: number) =>{
+export const formatTime = (num: number) => {
     if (num < 10) return "0" + num
     return num
+}
+
+export function formatScore(num: number) {
+    const lookup = [
+        { value: 1, symbol: "" },
+        { value: 1e3, symbol: "k" },
+        { value: 1e6, symbol: "M" },
+        { value: 1e9, symbol: "B" },
+        { value: 1e12, symbol: "T" },
+        { value: 1e15, symbol: "P" },
+        { value: 1e18, symbol: "E" }
+    ];
+    const rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
+    var item = lookup.slice().reverse().find(function (item) {
+        return num >= item.value;
+    });
+    return item ? (num / item.value).toLocaleString(undefined, { maximumFractionDigits: 2 }).replace(rx, "$1") + item.symbol : "0";
+}
+
+const linearRegresion = (ys: number[]) => {
+    let sumOxy = 0.0
+    let sumOx2 = 0.0
+    let avgX = 0.0
+    let avgY = 0.0
+    let sumX = 0.0
+    for (let n = 1; n <= ys.length; n++) {
+        let weight = Math.log1p(n + 1.0);
+        sumX += weight;
+        avgX += n * weight;
+        avgY += ys[n - 1] * weight;
+    }
+    avgX /= sumX;
+    avgY /= sumX;
+    for (let n = 1; n <= ys.length; n++) {
+        sumOxy += (n - avgX) * (ys[n - 1] - avgY) * Math.log1p(n + 1.0);
+        sumOx2 += Math.pow(n - avgX, 2.0) * Math.log1p(n + 1.0);
+    }
+    let Oxy = sumOxy / sumX;
+    let Ox2 = sumOx2 / sumX;
+    return [avgY - (Oxy / Ox2) * avgX, Oxy / Ox2]
+}
+
+export const calcBonusPp = (totalpp: number, playcount: number, scores: Score.Score[]) => {
+    //profile.Performance - best.map(el => el.Weighted.Performance).reduce((sum, a) => sum + a, 0)
+    let extrapolated = 0
+    if (scores.length == 100) {
+        let ys = scores.map((score, i) => Math.log10(score.Performance * Math.pow(0.95, i)))
+        let b = linearRegresion(ys)
+        for (let n = 100; n <= playcount; n++) {
+            let val = Math.pow(100, b[0] + b[1] * n);
+            if (val <= 0.0) {
+                break;
+            }
+            extrapolated += val;
+        }
+    }
+    return totalpp - (scores.map((el, i) => el.Performance * Math.pow(0.95, i)).reduce((sum, a) => sum + a, 0) + extrapolated)
 }
