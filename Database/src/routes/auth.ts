@@ -14,16 +14,14 @@ const paths = {
 router.get("/", async (req: Request, res: Response) => {
     const { state, code } = req.query
     if (!state || !code) return res.status(200).sendFile(paths.fail)
-    const resp = await axios.post("https://osu.ppy.sh/oauth/token", {
+    const [resp, err2] = await HandleAsync(axios.post("https://osu.ppy.sh/oauth/token", {
         client_id: process.env.OSUID,
         client_secret: process.env.OSU,
-        redirect_uri: process.env.OSUURL,
+        redirect_uri: process.env.OSUURL, 
         code,
         grant_type: "authorization_code"
-    }).catch((err: AxiosError) => {
-        logger.Error(err)
-        return
-    })
+    }))
+    if (err2) return logger.Error(err2)
     if (!resp) return res.status(200).sendFile(paths.fail)
     
     const rawData = resp.data

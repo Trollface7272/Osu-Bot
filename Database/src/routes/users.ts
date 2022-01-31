@@ -1,7 +1,8 @@
 import { Request, Response, Router } from "express"
-import { addTempKey, GetUser, onMessage } from "../database/users"
-import { RefreshToken, ValidateSecret } from "../functions/utils"
+import { addTempKey, GetUser, onMessage, RefreshOsuToken } from "../database/users"
+import { HandleAsync, ValidateSecret } from "../functions/utils"
 import { onMessage as gOnMessage } from "../database/guild"
+import axios from "axios"
 
 const router = Router()
 
@@ -34,8 +35,11 @@ router.post("/addtempsecret", (req: Request, res: Response) => {
 router.post("/refreshtoken", async (req: Request, res: Response) => {
     const { id, accessToken, tokenType, refreshToken, expires, scopes } = req.body
     if (!id || !accessToken || !tokenType || !refreshToken || !expires || !scopes) return res.status(400).send()
+    const [r, err] = (await HandleAsync(axios.get("https://osu.ppy.sh/api/v2/me/osu", { headers: {Authorization: `${tokenType} ${accessToken}`}})))
+    if (err) return console.error(err)
+    const name = r.data.username
 
-    const user = await RefreshToken({ id, accessToken, tokenType, refreshToken, expires: new Date(expires), scopes, name: 0})
+    const user = await RefreshOsuToken({ id, accessToken, tokenType, refreshToken, expires: new Date(expires), scopes, name })
     res.status(200).json(user)
 })
 

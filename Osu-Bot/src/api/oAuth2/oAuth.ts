@@ -51,9 +51,9 @@ export namespace OAuth2 {
         private refreshToken: string
         private code: string
         private reddirectUri: string
-        private refreshCallback: Function
+        private refreshCallback: ((a,b,c,d,e,f) => Promise<any>)
 
-        constructor(cacheId: string, tokenUrl: string, id: number, secret: string, scopes: string, code: string, reddirectUri: string, refreshCallback: Function) {
+        constructor(cacheId: string, tokenUrl: string, id: number, secret: string, scopes: string, code: string, reddirectUri: string, refreshCallback: ((a,b,c,d,e,f) => Promise<any>)) {
             this.tokenUrl = tokenUrl
             this.cacheId = cacheId
             this.id = id
@@ -83,7 +83,7 @@ export namespace OAuth2 {
             this.tokenType = data.tokenType
             this.refreshToken = data.refresh_token
             this.expires = new Date(Date.now() + data.expires_in * 1000)
-            this.refreshCallback(this.cacheId, this.accessToken, this.tokenType, this.refreshToken, this.expires, this.scopes)
+            this.refreshCallback(this.cacheId, this.accessToken, this.tokenType, this.refreshToken, this.expires, this.scopes).catch(err => console.error(err))
         }
 
         private async FetchToken() {
@@ -112,9 +112,9 @@ export namespace OAuth2 {
         private accessToken: string
         private expires: Date
         private refreshToken: string
-        private refreshCallback: Function
+        private refreshCallback: ((a,b,c,d,e,f) => Promise<any>)
 
-        constructor(cacheId: string, tokenUrl: string, id: number, secret: string, scopes: string, tokenType: string, refreshToken: string, accessToken: string, expires: Date, refreshCallback: Function) {
+        constructor(cacheId: string, tokenUrl: string, id: number, secret: string, scopes: string, tokenType: string, refreshToken: string, accessToken: string, expires: Date, refreshCallback: ((a,b,c,d,e,f) => Promise<any>)) {
             this.tokenUrl = tokenUrl
             this.cacheId = cacheId
             this.id = id
@@ -142,10 +142,11 @@ export namespace OAuth2 {
             })
             const data = res.data
             this.accessToken = data.access_token
-            this.tokenType = data.tokenType
+            this.tokenType = data.token_type
             this.refreshToken = data.refresh_token
             this.expires = new Date(Date.now() + data.expires_in * 1000)
-            this.refreshCallback(this.cacheId, this.accessToken, this.tokenType, this.refreshToken, this.expires, this.scopes)
+            this.refreshCallback(this.cacheId, this.accessToken, this.tokenType, this.refreshToken, this.expires, this.scopes).catch(err => console.error(err))
+            return `${this.tokenType} ${this.accessToken}`
         }
     }
 }
@@ -169,13 +170,13 @@ export class OAuth2Manager {
         return this.clientCredentials
     }
 
-    public UserCredentials(cacheId: string, scopes: string, tokenType: string, refreshToken: string, accessToken: string, expires: Date, refreshCallback: Function) {
+    public UserCredentials(cacheId: string, scopes: string, tokenType: string, refreshToken: string, accessToken: string, expires: Date, refreshCallback: ((a,b,c,d,e,f) => Promise<any>)) {
         const user = new OAuth2.User(cacheId, this.tokenUrl, this.id, this.secret, scopes, tokenType, refreshToken, accessToken, expires, refreshCallback)
         this.users[cacheId] = user
         return user
     }
 
-    public AuthCode(cacheId: string, scopes: string, code: string, reddirectUri: string, refreshCallback: Function) {
+    public AuthCode(cacheId: string, scopes: string, code: string, reddirectUri: string, refreshCallback: ((a,b,c,d,e,f) => Promise<any>)) {
         const user = new OAuth2.AuthCode(cacheId, this.tokenUrl, this.id, this.secret, scopes, code, reddirectUri, refreshCallback)
         this.users[cacheId] = user as unknown as OAuth2.User
         return user

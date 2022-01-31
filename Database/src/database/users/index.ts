@@ -26,15 +26,24 @@ export const GetUser = async ({ userId, name }: { userId: string, name?: string 
 }
 
 export const SetOsuToken = async (key: string, data: { token: string, refresh: string, expireDate: Date, tokenType: string, scopes?: string }, ip: string) => {
-    logger.Log(data)
     const user = await collection.findOne({ "osu.secret": key })
     data.scopes = user.osu.scopes
     await collection.updateOne({ "osu.secret": key }, { $set: { osu: data, ip } })
 }
 
-export const RefreshOsuToken = async (data: { id: string, accessToken: string, tokenType: string, refreshToken: string, expires: Date, scopes: string, name: number }) => {
-    //@ts-ignore
-    const resp = await collection.updateOne({ _id: userId }, { $set: { osu: data } })
+export const RefreshOsuToken = async ({ id, tokenType, accessToken, expires, refreshToken, name, scopes }: { id: string, accessToken: string, tokenType: string, refreshToken: string, expires: Date, scopes: string, name: number }) => {
+    const resp = await collection.updateOne({ _id: id }, {
+        $set: {
+            osu: {
+                tokenType: tokenType,
+                token: accessToken,
+                expireDate: expires,
+                refresh: refreshToken,
+                id: name,
+                scopes: scopes
+            }
+        }
+    })
 }
 
 export const onMessage = async (userId: string, isCommand: boolean) => {

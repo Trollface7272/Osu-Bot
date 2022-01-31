@@ -6,7 +6,7 @@ import logger from "@functions/logger"
 
 export const callback = async (_: Client, message: Message) => {
     if (message.author.bot) return
-    const prefix = process.env.NODE_ENV == "development" ? "-" : await GetPrefix(message.guildId)
+    const prefix = process.env.NODE_ENV == "development" ? "." : await GetPrefix(message.guildId)
     if (!message.content.startsWith(prefix)) return OnMessage(message.author.id, message.guildId, false)
     OnMessage(message.author.id, message.guildId, true)
     

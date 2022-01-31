@@ -1,3 +1,4 @@
+import { HandlePromise } from "@functions/utils"
 import axios from "axios"
 import { randomBytes } from "crypto"
 import { CommandInteraction } from "discord.js"
@@ -5,9 +6,10 @@ import { CommandInteraction } from "discord.js"
 const Link = async (interaction: CommandInteraction) => {
     //https://osu.ppy.sh/oauth/authorize?redirect_uri=http://localhost:727/auth&response_type=code&client_id=11234&state=290850421487042560
     const secret = randomBytes(16).toString("hex")
-    await axios.post("http://localhost:727/users/addtempsecret", {
-        userId: interaction.user.id, secret: process.env.SECRET, key: secret
-    })
+    const [res, err] = await HandlePromise(axios.post("http://localhost:727/users/addtempsecret", {
+        userId: interaction.user.id, secret: process.env.SECRET, key: secret, scopes: "public identify"
+    }))
+    
     if (!interaction.replied) interaction.reply({
         ephemeral: true,
         allowedMentions: {
