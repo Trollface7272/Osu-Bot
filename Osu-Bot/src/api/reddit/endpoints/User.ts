@@ -1,0 +1,10 @@
+
+
+namespace RedditUser {
+
+
+
+    class User {
+        
+    }
+}
