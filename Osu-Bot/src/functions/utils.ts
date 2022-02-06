@@ -4,12 +4,13 @@ import { BitModsFromString } from "@osuapi/calculator/base"
 import { GameModes } from "@osuapi/consts"
 import { Profile } from "@osuapi/endpoints/profile"
 import { Score } from "@osuapi/endpoints/score"
-import { Errors } from "@osuapi/error"
+import { Errors, OsuApiError } from "@osuapi/error"
 import { OsuApi } from "@osuapi/index"
-import { iScoreHitcounts } from "@osuapi/types/score"
 import { MessageEmbed, MessageOptions, TextBasedChannels } from "discord.js"
-import { ErrorCodes } from "./errors"
+import { ErrorCodes, ErrorHandles } from "./errors"
 import logger from "./logger"
+
+interface hitcounts { "50": number, "100": number, "300": number, "geki": number, "katu": number, "miss": number }
 
 const DifficultyEmoteIds = [
     ["858310858303864852", "858310858362978324", "858310858311729163", "858310858165190667", "858310858299408384", "858310857909075999"],
@@ -97,7 +98,7 @@ const CommandGamemodes = [
 ]
 
 export interface parsedArgs {
-    Name?: string[]
+    Name?: string
     Gamemode?: 0 | 1 | 2 | 3
     GreaterThan?: number
     Best?: boolean
@@ -109,7 +110,7 @@ export interface parsedArgs {
 }
 
 export const ParseArgs = (args: string[], command: string): parsedArgs => {
-    let out: parsedArgs = { Name: [], Gamemode: 0, Specific: [], Mods: 0 }
+    let out: parsedArgs = { Gamemode: 0, Specific: [], Mods: 0 }
     CommandGamemodes.map((e, index) => {
         e.map(el => { if (el.includes(command)) out.Gamemode = index as 0 | 1 | 2 | 3 })
     })
@@ -148,7 +149,7 @@ export const ParseArgs = (args: string[], command: string): parsedArgs => {
                 } else if(el.startsWith("+")) {
                     const mods = el.slice(1)
                     out.Mods = BitModsFromString(mods)
-                } else out.Name.push(el)
+                } else out.Name = el
 
 
         }
@@ -158,22 +159,19 @@ export const ParseArgs = (args: string[], command: string): parsedArgs => {
 
 export const FindMapInConversation = async (channel: TextBasedChannels): Promise<string> => {
     const messages = await channel.messages.fetch({ limit: 50 })
-    let map: string
-    messages.forEach(msg => {
-        if (msg.embeds.length < 1 || map) return
+    
+    for (const key of messages.keys()) {
+        const msg = messages.get(key)
+        
+        if (!msg || msg.embeds?.length == 0) continue
 
-        if (msg.embeds[0].author?.url?.startsWith("https://osu.ppy.sh/b/")) {
-            map = map || msg.embeds[0].author && msg.embeds[0].author.url.split("https://osu.ppy.sh/b/")[1]
-            map = map.replace(/[)]/g, "")
-            return map
-        } else if (msg.embeds[0].description?.includes("https://osu.ppy.sh/b/")) {
-            map = map || msg.embeds[0].description.split("https://osu.ppy.sh/b/", 2)[1].split(")")[0]
-            map = map.replace(/[)]/g, "")
-            return map
-        }
-
-    })
-    return map || "Not Found"
+        if (msg.embeds[0].author?.url?.startsWith("https://osu.ppy.sh/b/")) 
+            return msg.embeds[0].author && msg.embeds[0].author.url.split("https://osu.ppy.sh/b/")[1].replace(/[)]/g, "")
+        else if (msg.embeds[0].description?.includes("https://osu.ppy.sh/b/")) 
+            return msg.embeds[0].description.split("https://osu.ppy.sh/b/", 2)[1].split(")")[0].replace(/[)]/g, "")
+        
+    }
+    return "Not Found"
 }
 
 export const GetOsuToken = async (discordId: string, discordName: string) => {
@@ -183,17 +181,17 @@ export const GetOsuToken = async (discordId: string, discordName: string) => {
     return data.osu.token
 }
 
-const GetOsuProfileOptions = async (userId: string, Name: string[] = [], Mode: 0 | 1 | 2 | 3) => {
+const GetOsuProfileOptions = async (userId: string, Name: (number|string)=undefined, Mode: (0 | 1 | 2 | 3)=0) => {
     let [user, err]: [iUser, any] = await HandlePromise(GetUser(userId))
 
-    const profileOptions = { id: Name[0], mode: Mode, self: false, token: user?.osu?.token || undefined, OAuthId: userId }
-    if (Name.length == 0)
+    const profileOptions = { id: Name, mode: Mode, self: false, token: user?.osu?.token || undefined, OAuthId: userId }
+    if (!Name)
         if (user?.osu?.token) {
             profileOptions.self = true
-            profileOptions.id = user.osu.name
+            profileOptions.id = user.osu.id
         }
 
-    if (!profileOptions.self && Name?.length == 0) throw { error: ErrorCodes.ProfileNotLinked }
+    if (!profileOptions.self && !Name) throw { error: ErrorCodes.ProfileNotLinked }
 
     return profileOptions
 }
@@ -219,16 +217,17 @@ const HandleApiError = (err: any) => {
     }
 }
 
-export const GetOsuProfile = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3): Promise<Profile.Profile | MessageOptions> => {
+export const GetOsuProfile = async (userId: string, Name: number|string, Mode: 0 | 1 | 2 | 3): Promise<Profile.FromId | MessageOptions> => {
     const profileOptions = await GetOsuProfileOptions(userId, Name, Mode)
     const [profile, err] = await HandlePromise(OsuApi.Profile.FromId(profileOptions))
     if (err) return HandleApiError(err)
     return profile
 }
 
-export const GetOsuTopPlays = async (userId: string, Name: string[], Mode: 0 | 1 | 2 | 3, options: Score.BestParams): Promise<Score.Score | MessageOptions> => {
+export const GetOsuTopPlays = async (userId: string, Name: number, Mode: 0 | 1 | 2 | 3, options: Score.BestParams): Promise<Score.Recent | MessageOptions> => {
     const profileOptions = await GetOsuProfileOptions(userId, Name, Mode)
-    const [scores, err] = await HandlePromise<Score.Score>(OsuApi.Score.GetBest({ ...profileOptions, ...options }))
+    
+    const [scores, err] = await HandlePromise<Score.Recent>(OsuApi.Score.GetBest({ ...profileOptions, ...options } as unknown))
     if (err) return HandleApiError(err)
     return scores
 }
@@ -271,7 +270,7 @@ export const DateDiff = (date1: Date, date2: Date) => {
     return out[0] + (out[1] || "")
 }
 
-export const GetHits = (counts: iScoreHitcounts, mode: number): string => {
+export const GetHits = (counts: hitcounts, mode: number): string => {
     switch (mode) {
         case 1:
         case 0:
@@ -286,7 +285,7 @@ export const GetHits = (counts: iScoreHitcounts, mode: number): string => {
     }
 }
 
-export const CalculateAcc = (counts: iScoreHitcounts, mode: number): string => {
+export const CalculateAcc = (counts: hitcounts, mode: number): string => {
     switch (mode) {
         case 0:
             return Math.round(((counts[300] * 300 + counts[100] * 100 + counts[50] * 50) / ((counts[300] + counts[100] + counts[50] + counts.miss) * 300) * 100)).toFixed(2)
@@ -378,11 +377,11 @@ const linearRegresion = (ys: number[]) => {
     return [avgY - (Oxy / Ox2) * avgX, Oxy / Ox2]
 }
 
-export const calcBonusPp = (totalpp: number, playcount: number, scores: Score.Score[]) => {
+export const calcBonusPp = (totalpp: number, playcount: number, scores: Score.Recent[]) => {
     //profile.Performance - best.map(el => el.Weighted.Performance).reduce((sum, a) => sum + a, 0)
     let extrapolated = 0
     if (scores.length == 100) {
-        let ys = scores.map((score, i) => Math.log10(score.Performance * Math.pow(0.95, i)))
+        let ys = scores.map((score, i) => Math.log10(score.Pp * Math.pow(0.95, i)))
         let b = linearRegresion(ys)
         for (let n = 100; n <= playcount; n++) {
             let val = Math.pow(100, b[0] + b[1] * n);
@@ -392,5 +391,10 @@ export const calcBonusPp = (totalpp: number, playcount: number, scores: Score.Sc
             extrapolated += val;
         }
     }
-    return totalpp - (scores.map((el, i) => el.Performance * Math.pow(0.95, i)).reduce((sum, a) => sum + a, 0) + extrapolated)
+    return totalpp - (scores.map((el, i) => el.Pp * Math.pow(0.95, i)).reduce((sum, a) => sum + a, 0) + extrapolated)
+}
+
+export const HandleError = (err) => {
+    if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
+    return ErrorHandles.Unknown(err)
 }

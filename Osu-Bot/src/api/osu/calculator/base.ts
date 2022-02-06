@@ -38,7 +38,7 @@ export interface BeatmapParserOut {
 }
 
 export class CalculatorBase {
-    public async Calculate(map: Beatmaps.Beatmap, params: CalculateParams): Promise<any> { };
+    public async Calculate(map: Beatmaps.FromId, params: CalculateParams): Promise<any> { };
     constructor() { };
 }
 

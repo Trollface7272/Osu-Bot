@@ -1,6 +1,8 @@
 import { GetUser, RefreshToken } from "@database/users"
+import logger from "@functions/logger"
 import { OAuth2Manager } from "api/oAuth2/oAuth"
-import axios, { AxiosRequestConfig } from "axios"
+import axios, { AxiosError, AxiosRequestConfig } from "axios"
+import { Errors, OsuApiError } from "./error"
 
 export namespace Utils {
 
@@ -48,5 +50,13 @@ export namespace Utils {
         }
         
         return token?.GetToken() || OAuth.ClientCredentials.GetToken()
+    }
+    export const Error = (err: AxiosError, endpoint: string): never => {
+        if (!err.response) throw new OsuApiError(Errors.Unknown, err)
+        if (err.response.status == 401) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+        if (err.response.status == 403) throw new OsuApiError(Errors.BadToken, "Provided invalid token")
+        logger.Log(endpoint)
+        if (err.response.status == 404) throw new OsuApiError(Errors.WrongEndpoint, "Provided invalid api endpoint")
+        throw new OsuApiError(Errors.Unknown, err)
     }
 }

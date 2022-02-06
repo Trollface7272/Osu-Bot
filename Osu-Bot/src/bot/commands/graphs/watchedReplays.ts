@@ -5,12 +5,12 @@ import { ErrorHandles } from "@functions/errors"
 import { Profile } from "@osuapi/endpoints/profile"
 
 const replaysGraph = async (userId: string, { Name, Gamemode }: parsedArgs): Promise<MessageOptions> => {
-    const [profile, err] = await HandlePromise<Profile.Profile>(GetOsuProfile(userId, Name, Gamemode))
+    const [profile, err] = await HandlePromise<Profile.FromId>(GetOsuProfile(userId, Name, Gamemode))
     if (err) {
         if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
         return ErrorHandles.Unknown(err)
     }
-    const datesWithData = profile.ReplaysWatched.map(e => ({date: new Date(e.start_date), data: e.count}))
+    const datesWithData = profile.WatchedReplays.map(e => ({date: new Date(e.start_date), data: e.count}))
     const data: number[] = []
     for (let i = 0; i < datesWithData.length-1; i++) {
         const el1 = datesWithData[i];

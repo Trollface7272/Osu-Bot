@@ -10,7 +10,7 @@ export interface iUserOsu {
     token?: string,
     tokenType?: string
     refresh?: string,
-    name?: string,
+    id?: number,
     expireDate?: Date
     scopes?: string
 }

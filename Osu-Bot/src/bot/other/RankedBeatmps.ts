@@ -6,14 +6,14 @@ import { Beatmaps } from "@osuapi/endpoints/beatmap";
 import { OsuApi } from "@osuapi/index";
 import { MessageEmbed, TextChannel } from "discord.js";
 
-const FormatBeatmapSet = (beatmapSet: Beatmaps.BeatmapSet) => {
-    const length = beatmapSet.Beatmaps[0].Length
-    const drain = beatmapSet.Beatmaps[0].DrainLength
-    beatmapSet.Beatmaps.sort((v1, v2) => v1.Stars - v2.Stars)
+const FormatBeatmapSet = (beatmapSet: Beatmaps.Sets.SearchSet) => {
+    const length = beatmapSet.Beatmaps[0].Length.total
+    const drain = beatmapSet.Beatmaps[0].Length.drain
+    beatmapSet.Beatmaps.sort((v1, v2) => v1.StarRating - v2.StarRating)
     let description = `**[${beatmapSet.Artist} - ${beatmapSet.Title}](${`https://osu.ppy.sh/s/${beatmapSet.Id}`})** by **[${beatmapSet.Mapper}](https://osu.ppy.sh/u/${beatmapSet.MapperId})**\n`
     description += `**Length:** ${Math.floor(length / 60)}:${formatTime(length % 60)}${drain !== length ? (` (${Math.floor(drain / 60)}:${formatTime(drain % 60)} drain)`) : ""} **BPM:** ${beatmapSet.Bpm}\n`
     description += `**Download:** [map](https://osu.ppy.sh/d/${beatmapSet.Id})([no vid](https://osu.ppy.sh/d/${beatmapSet.Id}n)) osu://b/${beatmapSet.Id}\n`
-    description += `${beatmapSet.Beatmaps.map(beatmap => `${GetDifficultyEmote(beatmap.GamemodeNum, beatmap.Stars)}\`${beatmap.Version}\` [${beatmap.Stars}\\*]`).join("\n")}\n`
+    description += `${beatmapSet.Beatmaps.map(beatmap => `${GetDifficultyEmote(beatmap.ModeNum, beatmap.StarRating)}\`${beatmap.Version}\` [${beatmap.StarRating}\\*]`).join("\n")}\n`
 
     return description
 }
@@ -30,9 +30,10 @@ const _CheckForNewMaps = async (client: Client, type: string) => {
     const channelData = await Promise.all(event.RegisteredChannels.map(async (data) => [client.channels.cache.get(data.id) || await client.channels.fetch(data.id), data.mode]))
     const lastCheckDate = new Date(event.LastChecked)
 
-    const [beatmaps, err] = await HandlePromise<Beatmaps.BeatmapSet[]>(OsuApi.Beatmap.Search({ mode: 0, type: type }))
+    const [search, err] = await HandlePromise<Beatmaps.Sets.Search>(OsuApi.Beatmap.Search({ mode: 0, type: type }))
     if (err) return console.error(err)
-    const maps = beatmaps?.filter((map: Beatmaps.BeatmapSet) =>
+    const beatmaps = search.BeatmapSets
+    const maps = beatmaps?.filter((map: Beatmaps.Sets.SearchSet) =>
         map.RankedDate > lastCheckDate
     )
 
@@ -47,7 +48,7 @@ const _CheckForNewMaps = async (client: Client, type: string) => {
         .setTitle(`New ${type} map`)
     const data = maps.map((map) => ({
         embed: new MessageEmbed(base).setDescription(FormatBeatmapSet(map)).setThumbnail(`https://b.ppy.sh/thumb/${map.Id}l.jpg`),
-        gamemodes: [...new Set(map.Beatmaps.map(e => e.GamemodeNum))]
+        gamemodes: [...new Set(map.Beatmaps.map(e => e.ModeNum))]
     }))
 
     channelData.map(([channel, mode]: [TextChannel, (0 | 1 | 2 | 3)[]]) => {

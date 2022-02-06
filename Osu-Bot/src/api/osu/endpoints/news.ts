@@ -1,3 +1,4 @@
+import { HandlePromise } from "@functions/utils"
 import { v2ApiLink } from "@osuapi/consts"
 import { Utils } from "@osuapi/functions"
 import { OAuth2Manager } from "api/oAuth2/oAuth"
@@ -66,7 +67,8 @@ export namespace News {
 
         public async GetNews({ limit = 3 }: { limit?: number }) {
             const endpoint = `${v2ApiLink}/news`
-            const news = await Utils.Get(endpoint, { limit })
+            const [news, err] = await HandlePromise<NewsRaw>(Utils.Get(endpoint, { limit }))
+            if (err) Utils.Error(err, endpoint)
             return new News(news)
         }
     }

@@ -8,17 +8,19 @@ import { CommandInteraction, Message, MessageEmbed, MessageOptions } from "disco
 import { ApiCalculator } from "@osuapi/calculator/calculator"
 import { CalculatorOut } from "@osuapi/calculator/base"
 import { Profile } from "@osuapi/endpoints/profile"
+import { Beatmaps } from "@osuapi/endpoints/beatmap"
 
 
-const FormatTopPlay = (Gamemode: 0 | 1 | 2 | 3, score: Score.Score, calculated: CalculatorOut): string => {
-    const beatmap = score.Beatmap
+const FormatTopPlay = (Gamemode: 0 | 1 | 2 | 3, score: Score.Best, calculated: CalculatorOut): string => {
+    //@ts-ignore
+    const beatmap = score.Beatmap as Beatmaps.FromIds
     const beatmapSet = score.BeatmapSet
 
     let  description = ""
-    description += `**${score.Index}. [${beatmapSet.Title} [${beatmap.Version}]](${score.ScoreUrl}) +${score.Mods.length > 0 ? score.Mods.join("") : "NoMod"}** [${Math.round(calculated.difficulty.Star * 100) / 100}★]\n`
-    description += `▸ ${GradeEmotes[score.Grade]} ▸ **${score.Performance}pp**/${Math.round(calculated.performance.total * 1000) / 1000}pp ▸ ${Math.round(score.Accuracy * 10000) / 100}%\n`
+    description += `**[${score.Index}.](${beatmap.Url}) [${beatmapSet.Title} [${beatmap.Version}]](${score.ScoreUrl}) +${score.Mods.length > 0 ? score.Mods.join("") : "NoMod"}** [${Math.round(calculated.difficulty.Star * 100) / 100}★]\n`
+    description += `▸ ${GradeEmotes[score.Rank]} ▸ **${score.Pp}pp**/${Math.round(calculated.performance.total * 1000) / 1000}pp ▸ ${Math.round(score.Accuracy * 10000) / 100}%\n`
     description += `▸ ${score.Score.toLocaleString()} ▸ ${GetCombo(score.MaxCombo, beatmap.MaxCombo, Gamemode)} ▸ [${GetHits(score.Counts, Gamemode)}]\n`
-    description += `▸ Score Set ${DateDiff(score.SetAt, new Date(new Date().toLocaleString('en-US', { timeZone: "UTC" })))}Ago\n`
+    description += `▸ Score Set <t:${Math.floor(score.CreatedAt.getTime()/1000)}:R>\n`
 
     return description
 }
@@ -36,29 +38,29 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
         limit = 1
         offset = randomInt(100)
     }
-    const [profile, err] = await HandlePromise<Profile.Profile>(GetOsuProfile(userId, Name, Gamemode))
+    const [profile, err] = await HandlePromise<Profile.FromId>(GetOsuProfile(userId, Name, Gamemode))
     if (err) {
         if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
         return ErrorHandles.Unknown(err)
     }
-    Name = [profile.id.toString()]
+    let id = profile.Id
     
-    let [scores, err2] = await HandlePromise<Score.Score[]>(GetOsuTopPlays(userId, Name, Gamemode, { offset, limit: limit }))
+    let [scores, err2] = await HandlePromise<Score.Best[]>(GetOsuTopPlays(userId, id, Gamemode, { offset, limit: limit }))
     if (err2) {
         if (err2.error && ErrorHandles[err2.error]) return ErrorHandles[err2.error](err2)
         return ErrorHandles.Unknown(err2)
     }
 
-    if (GreaterThan) scores = scores.filter(e => Reversed ? (e.Performance < GreaterThan) : (e.Performance > GreaterThan))
+    if (GreaterThan) scores = scores.filter(e => Reversed ? (e.Pp < GreaterThan) : (e.Pp > GreaterThan))
 
-    if (Best) scores.sort((a, b) => b.SetAt.getTime() - a.SetAt.getTime())
+    if (Best) scores.sort((a, b) => b.CreatedAt.getTime() - a.CreatedAt.getTime())
 
     if (Reversed) {
         scores = scores.reverse()
     }
 
     if (Specific?.length > 0) {
-        const out: Score.Score[] = []
+        const out: Score.Best[] = []
         const base = Specific[0]
         for (let i = 0; i < Specific.length; i++) {
             if (scores[Specific[i] - base]) out.push(scores[Specific[i] - base])
@@ -75,7 +77,7 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
     }
     const maps = await OsuApi.Beatmap.ByIds({ id: mapIds, mode: Gamemode })
     maps.map(map => {
-        scores.find(el => el.Beatmap.Id === map.Id).Beatmap.MaxCombo = map.MaxCombo
+        scores.find(el => el.Beatmap.Id === map.Id).SetCombo(map.MaxCombo)
     })
     
     const outScores = scores.slice(0, Math.min(scores.length, 5))
@@ -85,16 +87,19 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
             let counts = score.Counts
             counts[300] += counts.miss
             counts.miss = 0
-            calculated = await ApiCalculator.Calculators[Gamemode].Calculate(score.Beatmap, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
+            console.log(score.Beatmap);
+            
+            calculated = await ApiCalculator.Calculators[Gamemode].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
         } else {
             let counts = score.Counts
             counts[300] += counts[50] + counts[100]
             counts.miss = 0
             counts[50] = 0
             counts[100] = 0
-            calculated = await ApiCalculator.Calculators[Gamemode].Calculate(score.Beatmap, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
+            
+            calculated = await ApiCalculator.Calculators[Gamemode].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
         }
-        if (calculated.performance.total < score.Performance) calculated.performance.total = score.Performance
+        if (calculated.performance.total < score.Pp) calculated.performance.total = score.Pp
         return FormatTopPlay(Gamemode, score, calculated)
     }))).join("")
     /*for (let i = 0; i < Math.min(scores.length, 5); i++) {
@@ -119,10 +124,10 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
 
 
     const embed = new MessageEmbed()
-        .setAuthor(`Top ${Math.min(scores.length, 5)} ${GamemodeNames[Gamemode]} Play${scores.length > 1 ? "s" : ""} for ${profile.Username}`, GetFlagUrl(profile.Country.code), GetProfileLink(profile.id, Gamemode))
+        .setAuthor(`Top ${Math.min(scores.length, 5)} ${GamemodeNames[Gamemode]} Play${scores.length > 1 ? "s" : ""} for ${profile.Username}`, GetFlagUrl(profile.Country.code), GetProfileLink(profile.Id, Gamemode))
         .setDescription(desc)
         //.setFooter(GetServer())
-        .setThumbnail(profile.Avatar)
+        .setThumbnail(profile.AvatarUrl)
     return ({ embeds: [embed], components: undefined, allowedMentions: { repliedUser: false } })
 }
 

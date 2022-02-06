@@ -5,7 +5,7 @@ import { Profile } from "@osuapi/endpoints/profile"
 import { ErrorHandles } from "@functions/errors"
 
 const rankGraph = async (userId: string, {Name, Gamemode}: parsedArgs): Promise<MessageOptions> => {
-    const [profile, err] = await HandlePromise<Profile.Profile>(GetOsuProfile(userId, Name, Gamemode))
+    const [profile, err] = await HandlePromise<Profile.FromId>(GetOsuProfile(userId, Name, Gamemode))
     if (err) {
         if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err) 
         return ErrorHandles.Unknown(err)

@@ -6,7 +6,7 @@ import { Message, PermissionString } from "discord.js"
 
 
 const TrackUser = async (userId: string, channelId: string, { Name, Gamemode, Specific }: parsedArgs) => {
-    const [profile, err] = await HandlePromise<Profile.Profile>(GetOsuProfile(userId, Name, Gamemode))
+    const [profile, err] = await HandlePromise<Profile.FromId>(GetOsuProfile(userId, Name, Gamemode))
     if (err) {
         if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err) 
         return ErrorHandles.Unknown(err)
@@ -14,7 +14,7 @@ const TrackUser = async (userId: string, channelId: string, { Name, Gamemode, Sp
 
     if (!Specific[0] || Specific[0] > 100 || Specific[0] < 1) Specific[0] = 100
 
-    const [res, err2] = await HandlePromise(TrackUserDb(profile.id, profile.Username, channelId, Gamemode, Specific[0], profile.Performance))
+    const [res, err2] = await HandlePromise(TrackUserDb(profile.Id, profile.Username, channelId, Gamemode, Specific[0], profile.Performance))
     if (!err2) return "👍"
     else return "👎"
 }

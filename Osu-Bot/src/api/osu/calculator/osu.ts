@@ -1,5 +1,4 @@
 import { Beatmaps } from "@osuapi/endpoints/beatmap";
-import { iScoreHitcounts } from "@osuapi/types/score";
 import { exec as _exec } from "child_process"
 import { promisify } from "util";
 import { BeatmapParserAttributes, BeatmapParserOut, BitModsFromString, CalculateParams, CalculatorBase, CalculatorOut, Mods } from "./base";
@@ -8,9 +7,11 @@ const exec = promisify(_exec)
 
 
 export class StdCalculator extends CalculatorBase {
-    public async Calculate(map: Beatmaps.Beatmap, params: CalculateParams): Promise<CalculatorOut> {
+    public async Calculate(map: Beatmaps.FromId, params: CalculateParams): Promise<CalculatorOut> {
         const mods = params.Mods.map(mod => `-m ${mod}`).join(" ")
         const bitMods = BitModsFromString(params.Mods.join())
+        console.log(map.MaxCombo);
+        
         console.time(map.Id.toString())
         let execRes = (await exec(`${process.env.OSU_PERFORMANCE_PATH} difficulty --ruleset:0 ${mods} -j ${map.Id}`)).stdout
         if (execRes.startsWith("Downloading")) execRes = execRes.split("\r")[1]
@@ -36,28 +37,28 @@ export class StdCalculator extends CalculatorBase {
     }
 }
 
+interface hitcounts { "50": number, "100": number, "300": number, "geki": number, "katu": number, "miss": number }
 
-
-const Accuracy = (counts: iScoreHitcounts) => {
+const Accuracy = (counts: hitcounts) => {
     if (TotalHits(counts) == 0)
         return 0;
 
     return Math.min(Math.max((counts[50] * 50 + counts["100"] * 100 + counts["300"] * 300) / (TotalHits(counts) * 300), 0), 1);
 }
 
-const TotalHits = (counts: iScoreHitcounts) => {
+const TotalHits = (counts: hitcounts) => {
     return counts["50"] + counts["100"] + counts["300"] + counts.miss;
 }
 
-const TotalSuccessfulHits = (counts: iScoreHitcounts) => {
+const TotalSuccessfulHits = (counts: hitcounts) => {
     return counts["50"] + counts["100"] + counts["300"]
 }
 
-const computeEffectiveMissCount = (beatmap: Beatmaps.Beatmap, scoreCombo: number, counts: iScoreHitcounts) => {
+const computeEffectiveMissCount = (beatmap: Beatmaps.FromId, scoreCombo: number, counts: hitcounts) => {
     let comboBasedMissCount = 0
     let beatmapMaxCombo = beatmap.MaxCombo
-    if (beatmap.Objects.Sliders > 0) {
-        let fullComboThreshold = beatmapMaxCombo - 0.1 * beatmap.Objects.Sliders
+    if (beatmap.Counts.sliders > 0) {
+        let fullComboThreshold = beatmapMaxCombo - 0.1 * beatmap.Counts.sliders
         if (scoreCombo < fullComboThreshold)
             comboBasedMissCount = fullComboThreshold / Math.max(1, scoreCombo)
     }
@@ -67,7 +68,7 @@ const computeEffectiveMissCount = (beatmap: Beatmaps.Beatmap, scoreCombo: number
     return Math.max((counts.miss), comboBasedMissCount)
 }
 
-const computeTotalValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapParserAttributes, scoreCombo: number, counts: iScoreHitcounts, mods: number) => {
+const computeTotalValue = (beatmap: Beatmaps.FromId, difficulty: BeatmapParserAttributes, scoreCombo: number, counts: hitcounts, mods: number) => {
     let multiplier = 1.12
     let misscount = computeEffectiveMissCount(beatmap, scoreCombo, counts)
 
@@ -76,7 +77,7 @@ const computeTotalValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapParserA
 
     let numTotalHits = TotalHits(counts)
     if ((mods & Mods.Bit.SpunOut) > 0)
-        multiplier *= 1 - Math.pow(beatmap.Objects.Spinners / (numTotalHits), 0.85)
+        multiplier *= 1 - Math.pow(beatmap.Counts.spinners / (numTotalHits), 0.85)
 
     let aim = computeAimValue(beatmap, difficulty, misscount, scoreCombo, counts, mods)
     let speed = computeSpeedValue(beatmap, difficulty, misscount, scoreCombo, counts, mods)
@@ -92,7 +93,7 @@ const computeTotalValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapParserA
     return { aim, speed, acc, fl, total }
 }
 
-const computeAimValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapParserAttributes, misscount: number, scoreCombo: number, counts: iScoreHitcounts, mods: number) => {
+const computeAimValue = (beatmap: Beatmaps.FromId, difficulty: BeatmapParserAttributes, misscount: number, scoreCombo: number, counts: hitcounts, mods: number) => {
     let rawAim = difficulty.aim_difficulty;
 
     if ((mods & Mods.Bit.TouchDevice) > 0)
@@ -123,9 +124,9 @@ const computeAimValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapParserAtt
     if ((mods & Mods.Bit.Hidden) > 0)
         aim *= 1 + 0.04 * (12 - approachRate)
 
-    let estimateDifficultSliders = beatmap.Objects.Sliders * 0.15
+    let estimateDifficultSliders = beatmap.Counts.sliders * 0.15
 
-    if (beatmap.Objects.Sliders > 0) {
+    if (beatmap.Counts.sliders > 0) {
         let maxCombo = beatmap.MaxCombo
         let estimateSliderEndsDropped = Math.min(Math.max(Math.min((counts[100] + counts[50] + counts.miss), maxCombo - scoreCombo), 0), estimateDifficultSliders);
         let sliderFactor = difficulty.slider_factor
@@ -138,7 +139,7 @@ const computeAimValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapParserAtt
     return aim
 }
 
-const computeSpeedValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapParserAttributes, misscount: number, scoreCombo: number, counts: iScoreHitcounts, mods: number) => {
+const computeSpeedValue = (beatmap: Beatmaps.FromId, difficulty: BeatmapParserAttributes, misscount: number, scoreCombo: number, counts: hitcounts, mods: number) => {
     let speed = Math.pow(5 * Math.max(1, difficulty.speed_difficulty / 0.0675) - 4, 3) / 100000
 
     let numTotalHits = TotalHits(counts)
@@ -167,7 +168,7 @@ const computeSpeedValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapParserA
     return speed
 }
 
-const computeAccuracyValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapParserAttributes, counts: iScoreHitcounts, mods: number) => {
+const computeAccuracyValue = (beatmap: Beatmaps.FromId, difficulty: BeatmapParserAttributes, counts: hitcounts, mods: number) => {
     let betterAccuracyPercentage: number
 
     let numHitObjectsWithAccuracy: number
@@ -175,7 +176,7 @@ const computeAccuracyValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapPars
         numHitObjectsWithAccuracy = TotalHits(counts);
         betterAccuracyPercentage = Accuracy(counts);
     } else {
-        numHitObjectsWithAccuracy = beatmap.Objects.Circles
+        numHitObjectsWithAccuracy = beatmap.Counts.circles
         if (numHitObjectsWithAccuracy > 0)
             betterAccuracyPercentage = ((counts[300] - (TotalHits(counts) - numHitObjectsWithAccuracy)) * 6 + counts[100] * 2 + counts[50]) / (numHitObjectsWithAccuracy * 6);
         else
@@ -199,7 +200,7 @@ const computeAccuracyValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapPars
     return acc
 }
 
-const computeFlashlightValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapParserAttributes, misscount: number, scoreCombo: number, counts: iScoreHitcounts, mods: number) => {
+const computeFlashlightValue = (beatmap: Beatmaps.FromId, difficulty: BeatmapParserAttributes, misscount: number, scoreCombo: number, counts: hitcounts, mods: number) => {
     let fl = 0
 
     if ((mods & Mods.Bit.Flashlight) == 0)
@@ -230,7 +231,7 @@ const computeFlashlightValue = (beatmap: Beatmaps.Beatmap, difficulty: BeatmapPa
     return fl
 }
 
-const getComboScalingFactor = (beatmap: Beatmaps.Beatmap, scoreCombo: number) => {
+const getComboScalingFactor = (beatmap: Beatmaps.FromId, scoreCombo: number) => {
     let maxCombo = beatmap.MaxCombo
     if (maxCombo > 0)
         return Math.min((Math.pow(scoreCombo, 0.8) / Math.pow(maxCombo, 0.8)), 1)
