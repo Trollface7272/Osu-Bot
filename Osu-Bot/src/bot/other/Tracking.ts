@@ -8,27 +8,28 @@ import { Score } from "@osuapi/endpoints/score";
 import { MessageEmbed, TextChannel } from "discord.js";
 import { Profile } from "@osuapi/endpoints/profile";
 import { Beatmaps } from "@osuapi/endpoints/beatmap";
+import { ApiCalculator } from "@osuapi/calculator/calculator";
 
 let offset = 0
 
 const formatTrackingScore = (base: MessageEmbed, score: Score.Best, pp: number) => {
     const beatmap = score.Beatmap as Beatmaps.FromId
     let description = `**[${score.BeatmapSet.Title} [${score.Beatmap.Version}]](${score.ScoreUrl}) +${score.Mods.length > 0 ? score.Mods : "NoMod"}** [${Math.round(score.Beatmap.StarRating * 100) / 100}★]\n`
-    description += `▸ ${GradeEmotes[score.Rank]} ▸ **${score.Pp}**/${0}pp▸ ${Math.round(score.Accuracy * 10000) / 100}%\n`
+    description += `▸ ${GradeEmotes[score.Rank]} ▸ **${score.Pp}**/${ApiCalculator.Calculators[score.ModeInt].Calculate(beatmap, { Counts: score.Counts, Combo: beatmap.MaxCombo, Mods: score.Mods })}pp▸ ${Math.round(score.Accuracy * 10000) / 100}%\n`
     description += `▸ ${score.Score.toLocaleString()} ▸ ${GetCombo(score.MaxCombo, beatmap.MaxCombo, score.Beatmap.ModeNum)} ▸ [${GetHits(score.Counts, score.Beatmap.ModeNum)}]\n`
 
     const embed = new MessageEmbed(base)
         .setAuthor(`${score.User.Username} gained a new #${score.Index} top play.`, score.User.AvatarUrl, score.User.ProfileUrl)
         .setFooter(`Set ${DateDiff(new Date(), score.CreatedAt)}Ago\n`)
         .setDescription(description)
-        .setThumbnail(`https://b.ppy.sh/thumb/${score.Beatmap.Id}l.jpg`)
+        .setThumbnail(`https://b.ppy.sh/thumb/${score.Beatmap.SetId}l.jpg`)
     return embed
 }
 
 export const RunTracking = async (client: Client) => {
     const tracked = await GetTracked(offset)
     if (!tracked || !tracked.channels) return
-    
+
     if (tracked.isLast) offset = 0
     else offset++
 

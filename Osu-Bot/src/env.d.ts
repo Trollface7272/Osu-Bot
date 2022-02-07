@@ -8,6 +8,8 @@ declare global {
             OSUID: number
             NODE_ENV: string
             OSU_PERFORMANCE_PATH: string
+            REDDITID: number
+            REDDIT: string
         }
     }
 }

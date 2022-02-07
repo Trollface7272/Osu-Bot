@@ -8,7 +8,7 @@ import { BeatmapFailTimes } from "@functions/canvasUtils";
 
 export const FormatBeatmap = (beatmap: Beatmaps.FromId, mods: number) => {
     let description = `**Length:** ${Math.floor(beatmap.Length.total / 60)}:${formatTime(beatmap.Length.total % 60)}${beatmap.Length.drain !== beatmap.Length.total ? (` (${Math.floor(beatmap.Length.drain / 60)}:${formatTime(beatmap.Length.drain % 60)} drain)`) : ""} **BPM:** ${beatmap.Bpm} **Mods:** ${ConvertBitModsToMods(mods)}\n`
-    description += `**Download:** [map](https://osu.ppy.sh/d/${beatmap.SetId})([no vid](https://osu.ppy.sh/d/${beatmap.SetId}n)) [Direct](http://osu.epictrolled.shop/redirect?site=osu://b/${beatmap.SetId})\n`
+    description += `**Download:** [map](https://osu.ppy.sh/d/${beatmap.SetId})([no vid](https://osu.ppy.sh/d/${beatmap.SetId}n)) [Direct](http://osu.epictrolled.shop/redirect?site=osu://b/${beatmap.Id})\n`
     description += `**${GetDifficultyEmote(beatmap.ModeNum, beatmap.StarRating)}${beatmap.Version}**\n`
     description += `▸**Difficulty:** ${beatmap.StarRating}★ ▸**Max Combo:** x${beatmap.MaxCombo}\n`
     description += `▸**AR:** ${beatmap.Difficulty.AR.toFixed(1)} ▸**OD:** ${beatmap.Difficulty.OD.toFixed(1)} ▸**HP:** ${beatmap.Difficulty.HP.toFixed(1)} ▸**CS:** ${beatmap.Difficulty.CS.toFixed(1)}\n`
