@@ -1,7 +1,9 @@
 import { GetUser, RefreshToken } from "@database/users"
 import { iUser } from "@interfaces/database"
-import { BitModsFromString } from "@osuapi/calculator/base"
+import { BitModsFromString, CalculatorOut } from "@osuapi/calculator/base"
+import { ApiCalculator } from "@osuapi/calculator/calculator"
 import { GameModes } from "@osuapi/consts"
+import { Beatmaps } from "@osuapi/endpoints/beatmap"
 import { Profile } from "@osuapi/endpoints/profile"
 import { Score } from "@osuapi/endpoints/score"
 import { Errors, OsuApiError } from "@osuapi/error"
@@ -28,7 +30,7 @@ export const Mods = {
         Hidden: 1 << 3,
         HardRock: 1 << 4,
         SuddenDeath: 1 << 5,
-        letTime: 1 << 6,
+        DoubleTime: 1 << 6,
         Relax: 1 << 7,
         HalfTime: 1 << 8,
         Nightcore: 1 << 9,
@@ -62,7 +64,7 @@ export const Mods = {
         Hidden: "HD",
         HardRock: "HR",
         SuddenDeath: "SD",
-        letTime: "DT",
+        DoubleTime: "DT",
         Relax: "RX",
         HalfTime: "HT",
         Nightcore: "NC",
@@ -144,7 +146,7 @@ export const ParseArgs = (args: string[], command: string): parsedArgs => {
                 break
             default:
                 const num = parseInt(el, 10)
-                if (!isNaN(num) && num <= 100 && num > 0) {
+                if (el.isNumber() && num <= 100 && num > 0) {
                     out.Specific.push(num)
                 } else if(el.startsWith("+")) {
                     const mods = el.slice(1)
@@ -301,18 +303,32 @@ export const CalculateAcc = (counts: hitcounts, mode: number): string => {
     }
 }
 
-export const ConvertBitModsToMods = (mods: number): string => {
+export const ConvertBitModsToModsString = (mods: number): string => {
     if (mods == 0) return "No Mod"
 
     let resultMods = ""
     if (mods & Mods.Bit.Perfect) mods &= ~Mods.Bit.SuddenDeath
-    if (mods & Mods.Bit.Nightcore) mods &= ~Mods.Bit.letTime
+    if (mods & Mods.Bit.Nightcore) mods &= ~Mods.Bit.DoubleTime
     for (const mod in Mods.Bit) {
         if (Mods.Bit[mod] & mods)
             resultMods += Mods.Names[mod]
     }
     return resultMods
 }
+
+export const ConvertBitModsToModsArr = (mods: number): string[] => {
+    if (mods == 0) return []
+
+    let resultMods = []
+    if (mods & Mods.Bit.Perfect) mods &= ~Mods.Bit.SuddenDeath
+    if (mods & Mods.Bit.Nightcore) mods &= ~Mods.Bit.DoubleTime
+    for (const mod in Mods.Bit) {
+        if (Mods.Bit[mod] & mods)
+            resultMods.push(Mods.Names[mod])
+    }
+    return resultMods
+}
+
 
 export const GetFlagUrl = (country: string): string => {
     return `https://flagcdn.com/w80/${country.toLowerCase()}.png`
@@ -397,4 +413,23 @@ export const calcBonusPp = (totalpp: number, playcount: number, scores: Score.Re
 export const HandleError = (err) => {
     if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
     return ErrorHandles.Unknown(err)
+}
+
+export const FcPp = async (score: Score.Recent) => {
+    if (score.MaxCombo < score.MaxCombo - 15 || score.Counts.miss > 0) {
+        let counts = score.Counts
+        counts[300] += counts.miss
+        counts.miss = 0
+        console.log(score.Beatmap);
+        
+        return await ApiCalculator.Calculators[score.ModeInt].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
+    } else {
+        let counts = score.Counts
+        counts[300] += counts[50] + counts[100]
+        counts.miss = 0
+        counts[50] = 0
+        counts[100] = 0
+        
+        return await ApiCalculator.Calculators[score.ModeInt].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
+    }
 }

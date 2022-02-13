@@ -52,7 +52,7 @@ class Client extends dClient {
                 this.on(file.name, file.callback.bind(null, this))
             })
             SetLogChannel(await (await this.guilds.fetch("341153679992160266")).channels.fetch("909270388624732160") as TextChannel)
-            setInterval(() => { RunTracking(this) }, 1000 * 60)
+            setInterval(() => { RunTracking(this) }, 1000 * 20)
             setInterval(() => { CheckForNewMaps(this) }, 1000 * 60)
             setInterval(() => { CheckForOsuNews(this) }, 1000 * 60 * 10)
             CheckForNewMaps(this)

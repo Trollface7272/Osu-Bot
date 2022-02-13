@@ -1,5 +1,6 @@
 import { Request, Response, Router } from "express";
-import { AddToTracking, GetTracked } from "../database/tracking";
+import { Types } from "mongoose";
+import { AddToTracking, GetTracked, UpdateTracked } from "../database/tracking";
 import { ValidateSecret } from "../functions/utils";
 
 const router = Router()
@@ -19,6 +20,14 @@ router.post("/get", async (req: Request, res: Response) => {
 
     if (offset == null) offset = 0
     res.json(await GetTracked(offset))
+})
+
+router.post("/update", async (req: Request, res: Response) => {
+    const { offset, performance, date } = req.body
+    if (offset == null || performance == null || date == null) return res.status(400).send()
+
+    await UpdateTracked(offset, performance, new Date(date)).catch(err => { console.error(err); res.status(500)})
+    res.send()
 })
 
 

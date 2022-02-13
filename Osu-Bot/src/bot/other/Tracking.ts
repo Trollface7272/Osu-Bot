@@ -1,26 +1,27 @@
 import Client from "@bot/client";
 import { GradeEmotes } from "@consts/osu";
-import { GetTracked } from "@database/track";
+import { GetTracked, UpdateTracked } from "@database/track";
 import { ErrorHandles } from "@functions/errors";
-import { DateDiff, GetCombo, GetHits, HandlePromise } from "@functions/utils";
+import { DateDiff, FcPp, GetCombo, GetHits, HandlePromise } from "@functions/utils";
 import { OsuApi } from "@osuapi/index";
 import { Score } from "@osuapi/endpoints/score";
 import { MessageEmbed, TextChannel } from "discord.js";
 import { Profile } from "@osuapi/endpoints/profile";
 import { Beatmaps } from "@osuapi/endpoints/beatmap";
 import { ApiCalculator } from "@osuapi/calculator/calculator";
+import { CalculatorOut } from "@osuapi/calculator/base";
 
 let offset = 0
 
-const formatTrackingScore = (base: MessageEmbed, score: Score.Best, pp: number) => {
+const formatTrackingScore = (base: MessageEmbed, score: Score.Best, pp: number, calculatod: CalculatorOut) => {
     const beatmap = score.Beatmap as Beatmaps.FromId
-    let description = `**[${score.BeatmapSet.Title} [${score.Beatmap.Version}]](${score.ScoreUrl}) +${score.Mods.length > 0 ? score.Mods : "NoMod"}** [${Math.round(score.Beatmap.StarRating * 100) / 100}★]\n`
-    description += `▸ ${GradeEmotes[score.Rank]} ▸ **${score.Pp}**/${ApiCalculator.Calculators[score.ModeInt].Calculate(beatmap, { Counts: score.Counts, Combo: beatmap.MaxCombo, Mods: score.Mods })}pp▸ ${Math.round(score.Accuracy * 10000) / 100}%\n`
+    let description = `**[${score.BeatmapSet.Title} [${score.Beatmap.Version}]](${score.ScoreUrl}) +${score.Mods.length > 0 ? score.Mods.join("") : "NoMod"}** [${Math.round(calculatod.difficulty.Star * 100) / 100}★]\n`
+    description += `▸ ${GradeEmotes[score.Rank]} ▸ **${score.Pp}**/${Math.round(calculatod.performance.total * 1000) / 1000}pp▸ ${Math.round(score.Accuracy * 10000) / 100}% (${pp > 0 ? `+${pp}` : pp}pp)\n`
     description += `▸ ${score.Score.toLocaleString()} ▸ ${GetCombo(score.MaxCombo, beatmap.MaxCombo, score.Beatmap.ModeNum)} ▸ [${GetHits(score.Counts, score.Beatmap.ModeNum)}]\n`
 
     const embed = new MessageEmbed(base)
         .setAuthor(`${score.User.Username} gained a new #${score.Index} top play.`, score.User.AvatarUrl, score.User.ProfileUrl)
-        .setFooter(`Set ${DateDiff(new Date(), score.CreatedAt)}Ago\n`)
+        .setFooter(`Set ${score.CreatedAt.toDiscordToolTip()}Ago\n`)
         .setDescription(description)
         .setThumbnail(`https://b.ppy.sh/thumb/${score.Beatmap.SetId}l.jpg`)
     return embed
@@ -53,17 +54,19 @@ export const RunTracking = async (client: Client) => {
     const newScores = scores.filter(score => score.CreatedAt > lastCheckDate)
 
     if (newScores.length === 0) return
+    UpdateTracked(offset-1, profile.Performance, new Date())
 
     const maps = await OsuApi.Beatmap.ByIds({ id: newScores.map(e => e.Beatmap.Id.toString()), mode: tracked.mode })
 
     const base = new MessageEmbed()
         .setColor("RANDOM")
-    const embedData = newScores.map(score => {
+    const embedData = await Promise.all(newScores.map(async score => {
         maps.map(map => {
             scores.find(el => el.Beatmap.Id === map.Id).SetCombo(map.MaxCombo)
         })
-        return [formatTrackingScore(base, score, profile.Performance - tracked.performance), score.Index]
-    })
+        const calculatod = await FcPp(score)
+        return [formatTrackingScore(base, score, (profile.Performance - tracked.performance).roundFixed(3), calculatod), score.Index]
+    }))
 
     channelData.map(([channel, limit]: [TextChannel, number]) => {
         const embeds = embedData.map(([embed, index]: [MessageEmbed, number]) => index <= limit ? embed : undefined).filter(e => e !== null)

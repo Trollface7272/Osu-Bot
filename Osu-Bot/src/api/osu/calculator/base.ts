@@ -10,7 +10,13 @@ export interface CalculateParams {
         miss: number
     },
     Combo: number
-    Mods: string[]
+    Mods: string[] | number
+}
+
+export interface MultipleParams {
+    Accuracy: number[]
+    Combo: number
+    Mods: string[] | number
 }
 
 export interface BeatmapParserAttributes {
@@ -39,6 +45,7 @@ export interface BeatmapParserOut {
 
 export class CalculatorBase {
     public async Calculate(map: Beatmaps.FromId, params: CalculateParams): Promise<any> { };
+    public async CalculateMultipleAccs(map: Beatmaps.FromId, params: MultipleParams): Promise<any> { };
     constructor() { };
 }
 
@@ -113,6 +120,19 @@ export const Mods = {
     },
 }
 
+export interface CalculatorDiff {
+    Star: number
+    MaxCombo: number
+    Aim: number
+    Speed: number
+    Flashlight: number
+    Slider: number
+    AR: number
+    OD: number
+    CS: number
+    HP: number
+}
+
 export interface CalculatorOut {
     performance: {
         aim: number
@@ -121,18 +141,30 @@ export interface CalculatorOut {
         fl: number
         total: number
     },
-    difficulty: {
-        Star: number
-        MaxCombo: number
-        Aim: number
-        Speed: number
-        Flashlight: number
-        Slider: number
-        AR: number
-        OD: number
-        CS: number
-        HP: number
-    }
+    difficulty: CalculatorDiff
+}
+
+export interface CalculatorMultipleOut {
+    calculated: {
+        acc: number,
+        performance: {
+            aim: number
+            speed: number
+            acc: number
+            fl: number
+            total: number
+        },
+        counts: {
+            "300": number,
+            "100": number,
+            "50": number,
+            miss: number,
+            katu: number,
+            geki: number
+        }
+        
+    }[],
+    difficulty: CalculatorDiff
 }
 
 var modbits = {

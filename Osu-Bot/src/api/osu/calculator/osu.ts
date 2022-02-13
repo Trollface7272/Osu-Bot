@@ -1,23 +1,58 @@
 import { Beatmaps } from "@osuapi/endpoints/beatmap";
+import { Errors, OsuApiError } from "@osuapi/error";
+import { Utils } from "@osuapi/functions";
 import { exec as _exec } from "child_process"
 import { promisify } from "util";
-import { BeatmapParserAttributes, BeatmapParserOut, BitModsFromString, CalculateParams, CalculatorBase, CalculatorOut, Mods } from "./base";
+import { BeatmapParserAttributes, BeatmapParserOut, BitModsFromString, CalculateParams, CalculatorBase, CalculatorMultipleOut, CalculatorOut, Mods, MultipleParams } from "./base";
 
 const exec = promisify(_exec)
 
 
-export class StdCalculator extends CalculatorBase {
-    public async Calculate(map: Beatmaps.FromId, params: CalculateParams): Promise<CalculatorOut> {
-        const mods = params.Mods.map(mod => `-m ${mod}`).join(" ")
-        const bitMods = BitModsFromString(params.Mods.join())
-        console.log(map.MaxCombo);
+export class StdCalculator implements CalculatorBase {
+    public async CalculateMultipleAccs(map: Beatmaps.FromId, params: MultipleParams): Promise<CalculatorMultipleOut> {
+        const mods = (typeof params.Mods === "object" ? params.Mods : Utils.ConvertBitModsToModsArr(params.Mods)).map(mod => `-m ${mod}`).join(" ")
+        const bitMods = typeof params.Mods === "object" ? BitModsFromString(params.Mods.join()) : params.Mods
         
-        console.time(map.Id.toString())
+        const execCmd = `${process.env.OSU_PERFORMANCE_PATH} difficulty --ruleset:0 ${mods} -j ${map.Id}`
+        let rawRes = (await exec(execCmd)).stdout
+        const execRes = rawRes.startsWith("Downloading") ? rawRes.split("\r")[1] : rawRes
+
+        let out: BeatmapParserOut
+        try {
+            out = JSON.parse(execRes) as BeatmapParserOut
+        } catch (err) {
+            console.log("Unexpected result from osu performance calculator")
+            console.log(execCmd);
+            process.stdout.write(rawRes + "\n")
+            throw new OsuApiError(Errors.Unknown, "Unknown error")
+        }
+
+        const difficulty = out.results[0].attributes
+        const counts = params.Accuracy.map(acc => ({ counts: Utils.AccToCounts(acc, map.Counts), acc }))
+        const performance = counts.map(c => ({ acc: c.acc, performance: computeTotalValue(map, difficulty, params.Combo, c.counts, bitMods), counts: c.counts }))
+        return {
+            calculated: performance, difficulty: {
+                Star: difficulty.star_rating,
+                MaxCombo: difficulty.max_combo,
+                Aim: difficulty.aim_difficulty,
+                Speed: difficulty.speed_difficulty,
+                Flashlight: difficulty.flashlight_difficulty,
+                Slider: difficulty.slider_factor,
+                AR: difficulty.approach_rate,
+                OD: difficulty.overall_difficulty,
+                CS: bitMods & Mods.Bit.HardRock ? map.Difficulty.CS * 1.4 : map.Difficulty.CS,
+                HP: bitMods & Mods.Bit.HardRock ? map.Difficulty.HP * 1.4 : map.Difficulty.HP
+            }
+        }
+    }
+    public async Calculate(map: Beatmaps.FromId, params: CalculateParams): Promise<CalculatorOut> {
+        const mods = (typeof params.Mods === "object" ? params.Mods : Utils.ConvertBitModsToModsArr(params.Mods)).map(mod => `-m ${mod}`).join(" ")
+        const bitMods = typeof params.Mods === "object" ? BitModsFromString(params.Mods.join()) : params.Mods
+
         let execRes = (await exec(`${process.env.OSU_PERFORMANCE_PATH} difficulty --ruleset:0 ${mods} -j ${map.Id}`)).stdout
         if (execRes.startsWith("Downloading")) execRes = execRes.split("\r")[1]
-        
+
         const out = JSON.parse(execRes) as BeatmapParserOut
-        console.timeEnd(map.Id.toString())
         const difficulty = out.results[0].attributes
         const performance = computeTotalValue(map, difficulty, params.Combo, params.Counts, bitMods)
         return {

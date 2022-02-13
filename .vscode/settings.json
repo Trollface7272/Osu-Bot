@@ -2,5 +2,13 @@
   "search.exclude": {
     "**/.yarn": true,
     "**/.pnp.*": true
+  },
+  "files.exclude": {
+    "**/.pnp**": true,
+    "**/.vscode": true,
+    "**/.yarn": true,
+    "**/.yarnrc.yml": true,
+    "**/node_modules": true,
+    "**/yarn.lock": true
   }
 }

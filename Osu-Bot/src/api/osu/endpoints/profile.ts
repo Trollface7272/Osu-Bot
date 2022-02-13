@@ -136,7 +136,7 @@ export namespace Profile {
             if (self) return this.Self({ OAuthId, mode })
             const gamemode = (mode != undefined) ? ("/" + GameModes[mode]) : ""
 
-            const endpoint = `${v2ApiLink}/users/${id}${gamemode}`
+            const endpoint = `${v2ApiLink}/users/${id.toString().replaceAll("_", "%20")}${gamemode}`
 
             const data = await this.Get<ResponseTypes.User.FromId>(endpoint, OAuthId)
 

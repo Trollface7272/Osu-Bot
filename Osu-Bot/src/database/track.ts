@@ -13,5 +13,5 @@ export const GetTracked = async (offset: number): Promise<TrackedUser> => {
 }
 
 export const UpdateTracked = async (offset: number, performance: number, date: Date) => {
-    const resp = (await axios.post("http://localhost:727/tracking/update", { offset, performance, date }))
+    const resp = (await axios.post("http://localhost:727/tracking/update", { offset, performance, date, secret: process.env.SECRET }).catch(err => console.error(err)))
 }

@@ -13,7 +13,7 @@ export namespace ______ {
     export interface Base extends Compact {
         accuracy: number
         ar: number
-        bpm: string
+        bpm: number
         convert: boolean
         count_circles: number
         count_sliders: number

@@ -1,4 +1,4 @@
-import { connection } from "mongoose"
+import { connection, Types } from "mongoose"
 
 const collection = () => connection.collection("tracking")
 
@@ -13,6 +13,14 @@ export const GetTracked = async (offset: number) => {
     let user = await cursor.next()
     for (let i = 0; i < offset; i++) if (await cursor.hasNext()) user = await cursor.next()
     
-    collection().updateOne({_id: user._id}, {$set: { lastCheck: new Date() }})
     return { ...user, isLast: !(await cursor.hasNext()) }
+}
+
+export const UpdateTracked = async (offset: number, performance: number, date: Date) => {
+    const cursor = collection().find({})
+    console.log(offset);
+    
+    let user = await cursor.next()
+    for (let i = 0; i < offset; i++) if (await cursor.hasNext()) user = await cursor.next()
+    collection().updateOne({_id: user._id}, {$set: { lastCheck: date, performance }})
 }
