@@ -25,8 +25,8 @@ const Debug = (...messages: any[]) => {
 const Error = (...messages: any[]) => {
     console.error(...messages)
     console.trace()
-    
-    const msgs = messages.map(m => typeof m === "object" && m != null && m.toString === Object.prototype.toString ? JSON.stringify(m) : m)
+
+    const msgs = messages.map(m => { try { return m.toString() } catch (err) { return null } }).filter(e => e !== null)
     logChannel?.send({
         embeds: [new MessageEmbed({
             color: "RANDOM",
