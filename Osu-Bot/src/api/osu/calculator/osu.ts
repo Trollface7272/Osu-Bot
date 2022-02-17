@@ -49,10 +49,20 @@ export class StdCalculator implements CalculatorBase {
         const mods = (typeof params.Mods === "object" ? params.Mods : Utils.ConvertBitModsToModsArr(params.Mods)).map(mod => `-m ${mod}`).join(" ")
         const bitMods = typeof params.Mods === "object" ? BitModsFromString(params.Mods.join()) : params.Mods
 
-        let execRes = (await exec(`${process.env.OSU_PERFORMANCE_PATH} difficulty --ruleset:0 ${mods} -j ${map.Id}`)).stdout
+        const execCmd = `${process.env.OSU_PERFORMANCE_PATH} difficulty --ruleset:0 ${mods} -j ${map.Id}`
+        const rawRes = (await exec(execCmd)).stdout
+        let execRes = rawRes
         if (execRes.startsWith("Downloading")) execRes = execRes.split("\r")[1]
 
-        const out = JSON.parse(execRes) as BeatmapParserOut
+        let out: BeatmapParserOut
+        try {
+            out = JSON.parse(execRes) as BeatmapParserOut
+        } catch (err) {
+            console.log("Unexpected result from osu performance calculator")
+            console.log(execCmd);
+            process.stdout.write(rawRes + "\n")
+            throw new OsuApiError(Errors.Unknown, "Unknown error")
+        }
         const difficulty = out.results[0].attributes
         const performance = computeTotalValue(map, difficulty, params.Combo, params.Counts, bitMods)
         return {
