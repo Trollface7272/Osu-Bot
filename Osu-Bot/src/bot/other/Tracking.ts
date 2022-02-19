@@ -64,8 +64,9 @@ export const RunTracking = async (client: Client) => {
         maps.map(map => {
             scores.find(el => el.Beatmap.Id === map.Id).SetCombo(map.MaxCombo)
         })
-        const calculatod = await FcPp(score)
-        return [formatTrackingScore(base, score, (profile.Performance - tracked.performance).roundFixed(3), calculatod), score.Index]
+        const [calculated, err] = await HandlePromise<any>(FcPp(score))
+        if (err) return
+        return [formatTrackingScore(base, score, (profile.Performance - tracked.performance).roundFixed(3), calculated), score.Index]
     }))
 
     channelData.map(([channel, limit]: [TextChannel, number]) => {
