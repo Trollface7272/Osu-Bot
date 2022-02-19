@@ -70,7 +70,7 @@ export const RunTracking = async (client: Client) => {
     }))
 
     channelData.map(([channel, limit]: [TextChannel, number]) => {
-        const embeds = embedData.map(([embed, index]: [MessageEmbed, number]) => index <= limit ? embed : undefined).filter(e => e !== null)
+        const embeds = embedData.map(([embed, index]: [MessageEmbed, number]) => index <= limit ? embed : undefined).filter(e => e != null)
         channel.send({ embeds: embeds.slice(-10) })
     })
 }
