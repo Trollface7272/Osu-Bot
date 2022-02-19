@@ -54,7 +54,7 @@ export const RunTracking = async (client: Client) => {
     const newScores = scores.filter(score => score.CreatedAt > lastCheckDate)
 
     if (newScores.length === 0) return
-    UpdateTracked(offset-1, profile.Performance, new Date())
+    UpdateTracked(offset - 1, profile.Performance, new Date())
 
     const maps = await OsuApi.Beatmap.ByIds({ id: newScores.map(e => e.Beatmap.Id.toString()), mode: tracked.mode })
 
@@ -70,7 +70,7 @@ export const RunTracking = async (client: Client) => {
     }))
 
     channelData.map(([channel, limit]: [TextChannel, number]) => {
-        const embeds = embedData.map(([embed, index]: [MessageEmbed, number]) => index <= limit ? embed : undefined).filter(e => e != null)
+        const embeds = embedData.filter(e => e != undefined).map(([embed, index]: [MessageEmbed, number]) => index <= limit ? embed : undefined).filter(e => e != null)
         channel.send({ embeds: embeds.slice(-10) })
     })
 }
