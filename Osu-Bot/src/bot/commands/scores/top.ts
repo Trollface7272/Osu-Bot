@@ -82,7 +82,8 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
     
     const outScores = scores.slice(0, Math.min(scores.length, 5))
     let desc = (await Promise.all(outScores.map(async score => {
-        let calculated = await FcPp(score)
+        let [calculated, err] = await HandlePromise<any>(FcPp(score))
+        if (err) return
         
         if (calculated.performance.total < score.Pp) calculated.performance.total = score.Pp
         return FormatTopPlay(Gamemode, score, calculated)
