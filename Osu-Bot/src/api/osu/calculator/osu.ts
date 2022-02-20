@@ -12,10 +12,11 @@ export class StdCalculator implements CalculatorBase {
     public async CalculateMultipleAccs(map: Beatmaps.FromId, params: MultipleParams): Promise<CalculatorMultipleOut> {
         const mods = (typeof params.Mods === "object" ? params.Mods : Utils.ConvertBitModsToModsArr(params.Mods)).map(mod => `-m ${mod}`).join(" ")
         const bitMods = typeof params.Mods === "object" ? BitModsFromString(params.Mods.join()) : params.Mods
-        
+
+        const splitter = process.platform === "win32" ? "\r" : "\n"
         const execCmd = `${process.env.OSU_PERFORMANCE_PATH} difficulty --ruleset:0 ${mods} -j ${map.Id}`
         let rawRes = (await exec(execCmd)).stdout
-        const execRes = rawRes.startsWith("Downloading") ? rawRes.split("\r")[1] : rawRes
+        const execRes = rawRes.startsWith("Downloading") ? rawRes.split(splitter)[1] : rawRes
 
         let out: BeatmapParserOut
         try {
@@ -49,10 +50,11 @@ export class StdCalculator implements CalculatorBase {
         const mods = (typeof params.Mods === "object" ? params.Mods : Utils.ConvertBitModsToModsArr(params.Mods)).map(mod => `-m ${mod}`).join(" ")
         const bitMods = typeof params.Mods === "object" ? BitModsFromString(params.Mods.join()) : params.Mods
 
+        const splitter = process.platform === "win32" ? "\r" : "\n"
         const execCmd = `${process.env.OSU_PERFORMANCE_PATH} difficulty --ruleset:0 ${mods} -j ${map.Id}`
         const rawRes = (await exec(execCmd)).stdout
         let execRes = rawRes
-        if (execRes.startsWith("Downloading")) execRes = execRes.split("\r")[1]
+        if (execRes.startsWith("Downloading")) execRes = execRes.split(splitter)[1]
 
         let out: BeatmapParserOut
         try {
