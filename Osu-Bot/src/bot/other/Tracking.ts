@@ -8,10 +8,9 @@ import { Score } from "@osuapi/endpoints/score";
 import { MessageEmbed, TextChannel } from "discord.js";
 import { Profile } from "@osuapi/endpoints/profile";
 import { Beatmaps } from "@osuapi/endpoints/beatmap";
-import { ApiCalculator } from "@osuapi/calculator/calculator";
 import { CalculatorOut } from "@osuapi/calculator/base";
 
-let offset = 0
+let offset = 4
 
 const formatTrackingScore = (base: MessageEmbed, score: Score.Best, pp: number, calculatod: CalculatorOut) => {
     const beatmap = score.Beatmap as Beatmaps.FromId
@@ -29,6 +28,7 @@ const formatTrackingScore = (base: MessageEmbed, score: Score.Best, pp: number, 
 
 export const RunTracking = async (client: Client) => {
     const tracked = await GetTracked(offset)
+    const oldOffset = offset
     if (!tracked || !tracked.channels) return
 
     if (tracked.isLast) offset = 0
@@ -54,7 +54,7 @@ export const RunTracking = async (client: Client) => {
     const newScores = scores.filter(score => score.CreatedAt > lastCheckDate)
 
     if (newScores.length === 0) return
-    UpdateTracked(offset - 1, profile.Performance, new Date())
+    UpdateTracked(oldOffset, profile.Performance, new Date())
 
     const maps = await OsuApi.Beatmap.ByIds({ id: newScores.map(e => e.Beatmap.Id.toString()), mode: tracked.mode })
 
