@@ -411,16 +411,33 @@ export const calcBonusPp = (totalpp: number, playcount: number, scores: Score.Re
 }
 
 export const HandleError = (err) => {
-    if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
+    if (err?.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
     return ErrorHandles.Unknown(err)
 }
 
-export const FcPp = async (score: Score.Recent) => {
+export const LeaderboardsFcPp = async (score: Score.Leaderboards, beatmap: Beatmaps.FromId) => {
     if (score.MaxCombo < score.MaxCombo - 15 || score.Counts.miss > 0) {
         let counts = score.Counts
         counts[300] += counts.miss
         counts.miss = 0
-        console.log(score.Beatmap);
+        
+        return await ApiCalculator.Calculators[score.ModeInt].Calculate(beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: beatmap.MaxCombo, Counts: counts })
+    } else {
+        let counts = score.Counts
+        counts[300] += counts[50] + counts[100]
+        counts.miss = 0
+        counts[50] = 0
+        counts[100] = 0
+        
+        return await ApiCalculator.Calculators[score.ModeInt].Calculate(beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: beatmap.MaxCombo, Counts: counts })
+    }
+}
+
+export const TopFcPp = async (score: Score.Recent) => {
+    if (score.MaxCombo < score.MaxCombo - 15 || score.Counts.miss > 0) {
+        let counts = score.Counts
+        counts[300] += counts.miss
+        counts.miss = 0
         
         return await ApiCalculator.Calculators[score.ModeInt].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
     } else {

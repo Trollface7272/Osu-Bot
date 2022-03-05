@@ -51,5 +51,8 @@ export namespace ResponseTypes {
         export interface Recent extends _Score.Recent {}
         export interface Firsts extends _Score.Firsts {}
         export interface Best extends _Score.Best {}
+        export interface Leaderboards extends _Score.Leaderboards {}
+        export interface BeatmapUserScore extends _Score.BeatmapUserScore {}
+        export interface BeatmapScores extends _Score.BeatmapScores {}
     }
 }

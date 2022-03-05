@@ -45,6 +45,17 @@ namespace ______ {
     export interface Best extends Recent {
         weight: Weight
     }
+    export interface Leaderboards extends Base {
+        user: User.Compact
+    }
+    export interface BeatmapUserScore {
+        position: number
+        score: Base
+    }
+    export interface BeatmapScores {
+        scores: Base[]
+        userScore?: BeatmapUserScore
+    }
 }
 
 export default ______

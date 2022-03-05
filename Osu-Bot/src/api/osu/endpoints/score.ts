@@ -2,6 +2,7 @@ import { GameModes, v2ApiLink } from "@osuapi/consts"
 import { Errors, OsuApiError } from "@osuapi/error"
 import { Utils } from "@osuapi/functions"
 import { ResponseTypes } from "@osuapi/response_types/ResponseTypes"
+import { GameMode } from "@osuapi/types/api_enums"
 import { OAuth2Manager } from "api/oAuth2/oAuth"
 import { AxiosError } from "axios"
 import { Beatmaps } from "./beatmap"
@@ -53,10 +54,34 @@ export namespace Score {
 
         constructor(raw: ResponseTypes.Score.Best) { super(raw); this.raw = raw }
     }
+    export class Leaderboards extends Base {
+        declare raw: ResponseTypes.Score.Best
+        public get User() { return new Profile.Compact(this.raw.user) }
+        constructor(raw) {super(raw);this.raw = raw}
+    }
+    
+    export class BeatmapUserScore {
+        private raw: ResponseTypes.Score.BeatmapUserScore
+        public get Position() { return this.raw.position }
+        public get Score() { return new Leaderboards(this.raw.score) }
+        constructor(raw: ResponseTypes.Score.BeatmapUserScore) {}
+    }
+
+    export class BeatmapScores {
+        private raw: ResponseTypes.Score.BeatmapScores
+        public get Scores() { return this.raw.scores.map(e => new Leaderboards(e)) }
+        public get UserScore() { return this.raw.userScore }
+
+        constructor(raw: ResponseTypes.Score.BeatmapScores) {this.raw = raw}
+    }
 
 
     export interface BestParams {
         id?: number, mode?: 0 | 1 | 2 | 3, self?: boolean, limit?: number, offset?: number, OAuthId?: string
+    }
+
+    export interface LeaderboardsParams {
+        id: number, mode?: number|string, mods?: number, country?: boolean, OAuthId?: string
     }
 
     export class Api {
@@ -64,7 +89,7 @@ export namespace Score {
         constructor(a: OAuth2Manager) { this.OAuth = a }
 
         public async Get<T>(endpoint: string, params: any, OAuthId: string) {
-            const [data, err]: [T[], AxiosError] = await Utils.HandlePromise<T[]>(Utils.Get(endpoint, params, { Authorization: await Utils.GetUserToken(this.OAuth, OAuthId) }))
+            const [data, err]: [T, AxiosError] = await Utils.HandlePromise<T>(Utils.Get(endpoint, params, { Authorization: await Utils.GetUserToken(this.OAuth, OAuthId) }))
 
             if (err) Utils.Error(err, endpoint)
 
@@ -80,7 +105,7 @@ export namespace Score {
                 mode: GameModes[mode],
                 limit, offset
             }
-            const data = await this.Get<ResponseTypes.Score.Best>(endpoint, params, OAuthId)
+            const data = await this.Get<ResponseTypes.Score.Best[]>(endpoint, params, OAuthId)
 
             return data.map((score, index) => { score.index = index + offset + 1; return new Best(score) })
         }
@@ -92,9 +117,21 @@ export namespace Score {
                 mode: GameModes[mode],
                 limit, offset
             }
-            const data = await this.Get<ResponseTypes.Score.Firsts>(endpoint, params, OAuthId)
+            const data = await this.Get<ResponseTypes.Score.Firsts[]>(endpoint, params, OAuthId)
 
             return data.map((score, index) => { score.index = index + offset + 1; return new Firsts(score) })
+        }
+
+        public async Leaderboards({ id, mode, mods, country, OAuthId }: LeaderboardsParams) {
+            if (typeof mode === "number") mode = GameMode[mode]
+            const endpoint = `${v2ApiLink}/beatmaps/${id}/scores`
+            const params = {
+                mode: mode || "osu",
+                mods: mods ?? undefined,
+                type: country ? "country" : undefined
+            }
+            const data = await this.Get<ResponseTypes.Score.BeatmapScores>(endpoint, params, OAuthId)
+            return new BeatmapScores(data)
         }
     }
 }

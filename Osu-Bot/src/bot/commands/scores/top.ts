@@ -1,11 +1,10 @@
 import { GamemodeNames, GradeEmotes } from "@consts/osu"
 import { ErrorHandles } from "@functions/errors"
-import { DateDiff, FcPp, GetCombo, GetFlagUrl, GetHits, GetOsuProfile, GetOsuTopPlays, GetProfileLink, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
+import { TopFcPp, GetCombo, GetFlagUrl, GetHits, GetOsuProfile, GetOsuTopPlays, GetProfileLink, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
 import { OsuApi } from "@osuapi/index"
 import { Score } from "@osuapi/endpoints/score"
 import { randomInt } from "crypto"
 import { CommandInteraction, Message, MessageEmbed, MessageOptions } from "discord.js"
-import { ApiCalculator } from "@osuapi/calculator/calculator"
 import { CalculatorOut } from "@osuapi/calculator/base"
 import { Profile } from "@osuapi/endpoints/profile"
 import { Beatmaps } from "@osuapi/endpoints/beatmap"
@@ -82,7 +81,7 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
     
     const outScores = scores.slice(0, Math.min(scores.length, 5))
     let desc = (await Promise.all(outScores.map(async score => {
-        let [calculated, err] = await HandlePromise<any>(FcPp(score))
+        let [calculated, err] = await HandlePromise<any>(TopFcPp(score))
         if (err) return
         
         if (calculated.performance.total < score.Pp) calculated.performance.total = score.Pp

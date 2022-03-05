@@ -2,7 +2,7 @@ import Client from "@bot/client";
 import { GradeEmotes } from "@consts/osu";
 import { GetTracked, UpdateTracked } from "@database/track";
 import { ErrorHandles } from "@functions/errors";
-import { DateDiff, FcPp, GetCombo, GetHits, HandlePromise } from "@functions/utils";
+import { DateDiff, TopFcPp, GetCombo, GetHits, HandlePromise } from "@functions/utils";
 import { OsuApi } from "@osuapi/index";
 import { Score } from "@osuapi/endpoints/score";
 import { MessageEmbed, TextChannel } from "discord.js";
@@ -64,7 +64,7 @@ export const RunTracking = async (client: Client) => {
         maps.map(map => {
             scores.find(el => el.Beatmap.Id === map.Id).SetCombo(map.MaxCombo)
         })
-        const [calculated, err] = await HandlePromise<any>(FcPp(score))
+        const [calculated, err] = await HandlePromise<any>(TopFcPp(score))
         if (err) return
         return [formatTrackingScore(base, score, (profile.Performance - tracked.performance).roundFixed(3), calculated), score.Index]
     }))
