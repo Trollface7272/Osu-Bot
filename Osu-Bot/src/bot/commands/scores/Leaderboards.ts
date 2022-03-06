@@ -75,7 +75,9 @@ const messageCallback = async (message: Message, args: string[]) => {
 
 const buttonInteraction = async (interaction: ButtonInteraction) => {
     const [, offset, id] = interaction.customId.split(";")
-    const { lb, map } = InteractionCache.LookUp(id)
+    const d = InteractionCache.LookUp(id)
+    if (!d) return
+    const { lb, map } = d
 
     interaction.update(await leaderboardsCache(lb, map, parseInt(offset), id))
 }
