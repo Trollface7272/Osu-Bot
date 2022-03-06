@@ -20,7 +20,7 @@ const newLaderboards = async (id: string, country: boolean, { Map, Specific }: p
     const [lb, err] = await HandlePromise<Score.BeatmapScores>(OsuApi.Score.Leaderboards({ id: parseInt(Map), country: true, OAuthId: id }))
     if (err) return HandleError(err)
 
-    let offset = Specific[0] * 10
+    let offset = Specific[0] * 10 || 0
     if (offset < 0 || offset > lb.Scores.length) offset = 0
     const intId = randomBytes(16).toString("hex")
     InteractionCache.Add(intId, { map, lb })
