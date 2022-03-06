@@ -21,6 +21,7 @@
 			"@prestart/*": ["prestart/*"],
 			"@database/*": ["database/*"],
 			"@osuapi/*": ["api/osu/*"],
+			"@api/*": ["api/*"],
 			"@consts/*": ["consts/*"]
 		}
 	},

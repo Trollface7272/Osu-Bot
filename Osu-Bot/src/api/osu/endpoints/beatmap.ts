@@ -6,6 +6,8 @@ import { ResponseTypes } from "@osuapi/response_types/ResponseTypes"
 import { OAuth2Manager } from "api/oAuth2/oAuth"
 import { AxiosError } from "axios"
 
+const statuses = {"graveyard": -2, "wip": -1, "pending": 0, "ranked": 1, "approved": 2, "qualified": 3, "loved": 4}
+
 export namespace Beatmaps {
 
     export class Compact {
@@ -17,9 +19,11 @@ export namespace Beatmaps {
         public get StarRating() { return this.raw.difficulty_rating }
         public get Mode() { return this.raw.mode }
         public get Status() { return this.raw.status }
+        public get StatusNum() { return statuses[this.Status]}
         public get Length() { return { total: this.raw.total_length } }
         public get MapperId() { return this.raw.user_id }
         public get Version() { return this.raw.version }
+        public get HasLeaderboards() {console.log(this.StatusNum); return this.StatusNum > 0}
 
         constructor(raw: ResponseTypes.Beatmap.Compact) { this.raw = raw }
     }

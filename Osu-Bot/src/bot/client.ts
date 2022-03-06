@@ -24,7 +24,10 @@ class Client extends dClient {
                 Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
                 Intents.FLAGS.GUILD_VOICE_STATES,
                 Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS
-            ]
+            ],
+            allowedMentions: {
+                repliedUser: false
+            }
         })
         this.once("ready", async () => {
             logger.Info(`Logged in as ${this.user.tag}`)

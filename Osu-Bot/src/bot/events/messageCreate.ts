@@ -17,6 +17,7 @@ export const callback = async (_: Client, message: Message) => {
     
     
     if (!callback) return
+    message.channel.sendTyping()
     try { await callback(message, args) }
     catch (err) {
         if (err?.includes && err.includes("Cannot send an empty message")) return

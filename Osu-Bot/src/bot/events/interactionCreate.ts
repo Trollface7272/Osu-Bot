@@ -1,4 +1,4 @@
-import { CommandInteraction, Interaction, SelectMenuInteraction, User } from "discord.js"
+import { ButtonInteraction, CommandInteraction, Interaction, SelectMenuInteraction, User } from "discord.js"
 import Client from "@bot/client"
 import { OnMessage } from "@database/users"
 import logger from "@functions/logger"
@@ -7,6 +7,7 @@ export const callback = (_: Client, interaction: Interaction) => {
     try {
         if (interaction.isCommand()) commandInteraction(interaction as CommandInteraction)
         if (interaction.isSelectMenu()) selectMenuInteraction(interaction as SelectMenuInteraction)
+        if (interaction.isButton()) buttonInteraction(interaction as ButtonInteraction)
     } catch (err) { logger.Error(err) }
 }
 
@@ -17,6 +18,10 @@ const commandInteraction = (interaction: CommandInteraction) => {
 }
 
 const selectMenuInteraction = (interaction: SelectMenuInteraction) => {
+    (interaction.client as Client).interactions.get(interaction.customId.split(";")[0])?.callback(interaction)
+}
+
+const buttonInteraction = (interaction: ButtonInteraction) => {
     (interaction.client as Client).interactions.get(interaction.customId.split(";")[0])?.callback(interaction)
 }
 

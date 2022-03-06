@@ -5,7 +5,7 @@ export namespace ______ {
         difficulty_rating: number
         id: number
         mode: string
-        status: string
+        status: "graveyard" | "wip" | "pending" | "ranked" | "approved" | "qualified" | "loved"
         total_length: number
         user_id: number
         version: string
@@ -41,7 +41,7 @@ export namespace ______ {
         failtimes: { fail: number[], exit: number[] }
         max_combo: number
     }
-    export interface Lookup extends FromId {}
+    export interface Lookup extends FromId { }
 }
 
 export default ______

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "exports": "./src/index.js",
-  "type":"module",
+  "type": "module",
   "scripts": {
     "test": "ts-node-dev --input-type module --respawn --transpile-only --poll ./src/index.ts",
     "lint": "prettier --write .",
@@ -83,6 +83,7 @@
     "@prestart": "src/prestart",
     "@database": "src/database",
     "@osuapi": "src/api/osu",
+    "@api": "src/api",
     "@consts": "src/consts"
   }
 }

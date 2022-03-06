@@ -3,7 +3,7 @@ declare global {
         isNumber(): boolean
     }
     interface Number {
-        roundFixed(digits: number): number
+        roundFixed(digits: number): string
     }
     interface Date {
         toDiscordToolTip(): string
