@@ -10,5 +10,6 @@
     "**/.yarnrc.yml": true,
     "**/node_modules": true,
     "**/yarn.lock": true
-  }
+  },
+  "typescript.tsdk": "node_modules\\typescript\\lib"
 }

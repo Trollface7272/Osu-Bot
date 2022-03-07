@@ -13,7 +13,7 @@ const newLaderboards = async (id: string, country: boolean, { Map, Specific }: p
     const [map, er] = await HandlePromise<Beatmaps.FromId>(OsuApi.Beatmap.ById({ id: parseInt(Map), OAuthId: id }))
     if (er) return HandleError(er)
 
-    const [lb, err] = await HandlePromise<Score.BeatmapScores>(OsuApi.Score.Leaderboards({ id: parseInt(Map), country: false, OAuthId: id }))
+    const [lb, err] = await HandlePromise<Score.BeatmapScores>(OsuApi.Score.Leaderboards({ id: parseInt(Map), country: true, OAuthId: id }))
     if (err) return HandleError(err)
 
     let offset = Specific[0] * 10 || 0
@@ -23,7 +23,7 @@ const newLaderboards = async (id: string, country: boolean, { Map, Specific }: p
     
     
 
-    return format(lb, map, offset, intId, true)
+    return format(lb, map, offset, intId, false)
 }
 
 
@@ -51,20 +51,20 @@ const buttonInteraction = async (interaction: ButtonInteraction) => {
     if (!d) return
     const { lb, map } = d
 
-    interaction.update(await format(lb, map, parseInt(offset), id, true))
+    interaction.update(await format(lb, map, parseInt(offset), id, false))
 }
 
 const interactionCallback = (interaction: CommandInteraction) => {
     if (interaction.isButton()) return buttonInteraction(interaction as ButtonInteraction)
 }
 
-const name = ["lb", "leaderboards"]
+const name = ["clb", "countrylb", "countryleaderboards", "countrylb"]
 export const messageCommand = {
     name,
     callback: messageCallback
 }
 
 export const interactionCommand = {
-    name: "leaderboards",
+    name: "country leaderboards",
     callback: interactionCallback
 }

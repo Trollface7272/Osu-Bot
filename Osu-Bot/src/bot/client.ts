@@ -34,6 +34,7 @@ class Client extends dClient {
             const commandFiles: string[] = await gPromise(`${__dirname}/commands/**/*{.ts,.js}`)
             const guild = await this.guilds.fetch("341153679992160266")
             commandFiles.map(async (value: string) => {
+                if (value.includes("/_")) return
                 const file: iCommandFile = await import(value)
 
                 const command = file.messageCommand
