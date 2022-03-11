@@ -133,6 +133,7 @@ export namespace Profile {
         }
 
         public async FromId({ id, mode, self, OAuthId }: apiOptions) {
+            if (!id) return
             if (self) return this.Self({ OAuthId, mode })
             const gamemode = (mode != undefined) ? ("/" + GameModes[mode]) : ""
 

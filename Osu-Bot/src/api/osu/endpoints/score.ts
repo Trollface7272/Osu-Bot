@@ -80,6 +80,10 @@ export namespace Score {
         id?: number, mode?: 0 | 1 | 2 | 3, self?: boolean, limit?: number, offset?: number, OAuthId?: string
     }
 
+    export interface RecentParams {
+        id?: number, mode?: 0 | 1 | 2 | 3, self?: boolean, limit?: number, offset?: number, OAuthId?: string, fails?: boolean
+    }
+
     export interface LeaderboardsParams {
         id: number, mode?: number|string, mods?: number, country?: boolean, OAuthId?: string
     }
@@ -98,28 +102,33 @@ export namespace Score {
             return data
         }
 
-        public async GetBest({ id, mode, limit = 100, offset = 0, OAuthId }: BestParams) {
+        private async _Get<T>({ id, mode, limit = 100, offset = 0, OAuthId }: BestParams, type: string, Type: any, otherParams?: any) {
             if (!id) throw new OsuApiError(Errors.InvalidId, "Provided invalid id")
-            const endpoint = `${v2ApiLink}/users/${id}/scores/best`
+            const endpoint = `${v2ApiLink}/users/${id}/scores/${type}`
             const params = {
                 mode: GameModes[mode],
-                limit, offset
+                limit, offset, ...otherParams
             }
-            const data = await this.Get<ResponseTypes.Score.Best[]>(endpoint, params, OAuthId)
+            const data = await this.Get<T[]>(endpoint, params, OAuthId)
 
-            return data.map((score, index) => { score.index = index + offset + 1; return new Best(score) })
+            //@ts-ignore
+            return data.map((score, index) => { score.index = index + offset + 1; return new Type(score) })
         }
 
-        public async GetFirsts({ id, mode, limit = 100, offset = 0, OAuthId }: BestParams) {
-            if (!id) throw new OsuApiError(Errors.InvalidId, "Provided invalid id")
-            const endpoint = `${v2ApiLink}/users/${id}/scores/firsts`
-            const params = {
-                mode: GameModes[mode],
-                limit, offset
-            }
-            const data = await this.Get<ResponseTypes.Score.Firsts[]>(endpoint, params, OAuthId)
+        public async GetBest(param: BestParams) {
+            return this._Get<ResponseTypes.Score.Best>(param, "best", Best)
+        }
 
-            return data.map((score, index) => { score.index = index + offset + 1; return new Firsts(score) })
+        public async GetFirsts(param: BestParams) {
+            return this._Get<ResponseTypes.Score.Firsts>(param, "firsts", Firsts)
+        }
+
+        public async GetRecent(param: RecentParams) {
+            return this._Get<ResponseTypes.Score.Recent>(param, "recent", Recent, { include_fails: param.fails ? "1" : "0"})
+        }
+
+        public async GetPinned(param: BestParams) {
+            return this._Get<ResponseTypes.Score.Best>(param, "pinned", Best)
         }
 
         public async Leaderboards({ id, mode, mods, country, OAuthId }: LeaderboardsParams) {

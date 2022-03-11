@@ -1,7 +1,9 @@
+import { UsernameCache } from "@api/cache/Usernames"
 import { GetUser, RefreshToken } from "@database/users"
 import logger from "@functions/logger"
 import { OAuth2Manager } from "api/oAuth2/oAuth"
 import axios, { AxiosError, AxiosRequestConfig } from "axios"
+import { OsuApi } from "."
 import { Mods } from "./calculator/base"
 import { Beatmaps } from "./endpoints/beatmap"
 import { Errors, OsuApiError } from "./error"
@@ -96,5 +98,13 @@ export namespace Utils {
                 resultMods.push(Mods.Names[mod])
         }
         return resultMods
+    }
+    export const lookupName = async (name: string, id: string) => {
+        if (name?.isNumber()) return parseInt(name)
+        const lookedUp = UsernameCache.LookUp(name)
+        if (lookedUp) return lookedUp
+        const user = await OsuApi.Profile.FromId({id: name, OAuthId: id})
+        UsernameCache.Add(name, user.Id)
+        return user.Id
     }
 }
