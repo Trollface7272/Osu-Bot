@@ -92,6 +92,18 @@ export const Mods = {
     },
 }
 
+export const osuGraphBgColorPlugin = {
+    id: 'custom_canvas_background_color',
+    beforeDraw: (chart) => {
+        const ctx = chart.canvas.getContext('2d');
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = 'rgba(70,57,63,255)';
+        ctx.fillRect(0, 0, chart.width, chart.height);
+        ctx.restore();
+    }
+}
+
 const CommandGamemodes = [
     [],
     ["taiko"],
@@ -293,7 +305,7 @@ export const GetHits = (counts: hitcounts, mode: number): string => {
     }
 }
 
-export const CalculateProgress = (counts: hitcounts, objects: objects, mode: 0|1|2|3) => {
+export const CalculateProgress = (counts: hitcounts, objects: objects, mode: 0 | 1 | 2 | 3) => {
     switch (mode) {
         case 1:
         case 0:

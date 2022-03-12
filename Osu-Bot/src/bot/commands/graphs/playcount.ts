@@ -4,14 +4,24 @@ import { OsuGraph } from "@functions/canvasUtils"
 import { Profile } from "@osuapi/endpoints/profile"
 import { ErrorHandles } from "@functions/errors"
 
-const playcountGraph = async (userId: string, {Name, Gamemode}: parsedArgs): Promise<MessageOptions> => {
+const playcountGraph = async (userId: string, { Name, Gamemode }: parsedArgs): Promise<MessageOptions> => {
     const [profile, err] = await HandlePromise<Profile.FromId>(GetOsuProfile(userId, Name, Gamemode))
     if (err) {
-        if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err) 
+        if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
         return ErrorHandles.Unknown(err)
     }
-    const buffer = await OsuGraph(profile.MonthlyPlaycounts.map(e => e.count), {reverse:false})
-    return {files: [new MessageAttachment(buffer, "playcount.png")], allowedMentions: {repliedUser: false}}
+    const buffer = await OsuGraph(profile.MonthlyPlaycounts.map(e => e.count), {
+        reverse: false, yLines: true, fill: "start",
+        yTitle: {
+            display: true,
+            text: "Playcount",
+            color: "rgb(100, 100, 100)",
+            font: {
+                size: 20
+            }
+        }
+    })
+    return { files: [new MessageAttachment(buffer, "playcount.png")], allowedMentions: { repliedUser: false } }
 }
 
 const messageCallback = async (message: Message, args: string[]) => {

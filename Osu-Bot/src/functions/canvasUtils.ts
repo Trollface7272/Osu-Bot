@@ -1,21 +1,50 @@
 import { ChartJSNodeCanvas } from "chartjs-node-canvas"
+import { osuGraphBgColorPlugin } from "./utils"
 
 interface GraphOptions {
     reverse?: boolean
+    labels?: string[]
+    xTitle?: {
+        text: string
+        color?: string
+        display?: boolean
+        font?: {
+            size?: 20
+            family?: string
+            lineHeight?: number
+            style?: "normal" | "italic" | "oblique" | "initial" | "inherit"
+            weight?: string
+        }
+    }
+    yTitle?: {
+        text: string
+        color?: string
+        display?: boolean
+        font?: {
+            size?: 20
+            family?: string
+            lineHeight?: number
+            style?: "normal" | "italic" | "oblique" | "initial" | "inherit"
+            weight?: string
+        }
+    }
+    fill?: string
+    xLines?: boolean
+    yLines?: boolean
 }
-export const OsuGraph = async (data: number[], { reverse }: GraphOptions) => {
-    const canvas = new ChartJSNodeCanvas({ width: 400, height: 200 })
+export const OsuGraph = async (data: number[], { reverse, labels, xTitle, yTitle, fill, xLines, yLines }: GraphOptions) => {
+    const canvas = new ChartJSNodeCanvas({ width: 800, height: 300 })
     const buffer = await canvas.renderToBuffer({
         type: "line",
         data: {
-            labels: Array(data.length).fill(""),
+            labels: labels || Array(data.length).fill(""),
             datasets: [{
-                label: "",
                 data: data,
-                fill: false,
+                fill: fill,
                 borderColor: "rgb(255, 208, 49)",
+                backgroundColor: "rgba(255, 208, 49, 0.2)",
                 showLine: true,
-                tension: 0.1
+                tension: 0
             }],
         },
         options: {
@@ -31,12 +60,13 @@ export const OsuGraph = async (data: number[], { reverse }: GraphOptions) => {
             },
             scales: {
                 "y2": {
-                    reverse
+                    title: yTitle,
+                    reverse,
+                    grid: {display: yLines ?? false}
                 },
                 "x2": {
-                    grid: {
-                        color: "rgba(0, 0, 0, 0)"
-                    }
+                    title: xTitle,
+                    grid: {display: xLines ?? false} 
                 }
             },
             plugins: {
@@ -44,7 +74,8 @@ export const OsuGraph = async (data: number[], { reverse }: GraphOptions) => {
                     display: false
                 }
             }
-        }
+        },
+        plugins: [osuGraphBgColorPlugin]
     })
     return buffer
 }

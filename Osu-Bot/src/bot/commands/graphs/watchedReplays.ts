@@ -10,18 +10,31 @@ const replaysGraph = async (userId: string, { Name, Gamemode }: parsedArgs): Pro
         if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
         return ErrorHandles.Unknown(err)
     }
-    const datesWithData = profile.WatchedReplays.map(e => ({date: new Date(e.start_date), data: e.count}))
+    const datesWithData = profile.WatchedReplays.map(e => ({ date: new Date(e.start_date), data: e.count }))
     const data: number[] = []
-    for (let i = 0; i < datesWithData.length-1; i++) {
-        const el1 = datesWithData[i];
-        const el2 = datesWithData[i+1];
-        data.push(el1.data)
-        const emptyMonths = (el2.date.getMonth() - el1.date.getMonth() + (el2.date.getFullYear() - el2.date.getFullYear()) * 12) - 1
-        for (let i = 0; i < emptyMonths; i++) data.push(0)
-        if (datesWithData.length-2 == i) data.push(el2.data)
+    const labels: string[] = []
+    for (let i = datesWithData[0].date.getFullYear(); i <= new Date().getFullYear(); i++) {
+        const start = i == datesWithData[0].date.getFullYear() ? datesWithData[0].date.getMonth() : 0
+        const end = i == new Date().getFullYear() ? new Date().getMonth() + 1 : 12
+        for (let j = start; j < end; j++) {
+            const e = datesWithData.find(e => e.date.getFullYear() === i && e.date.getMonth() === j)
+            labels.push(`${j+1}.${i}`)
+            data.push(e?.data || 0)
+        }
+
     }
-    const buffer = await OsuGraph(data, { reverse: false })
-    return { files: [new MessageAttachment(buffer, "watched_replays.png")], allowedMentions: { repliedUser: false } }
+    const buffer = await OsuGraph(data, {
+        reverse: false, labels, fill: "start", yLines: true,
+        yTitle: {
+            display: true,
+            text: "Replays Watched",
+            color: "rgb(100,100,100)",
+            font: {
+                size: 20
+            }
+        }
+    })
+    return { files: [new MessageAttachment(buffer, "watched_replays.png")] }
 }
 
 const messageCallback = async (message: Message, args: string[]) => {
