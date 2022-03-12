@@ -43,9 +43,9 @@ export interface BeatmapParserOut {
     results: BeatmapParserResult[]
 }
 
-export class CalculatorBase {
-    public async Calculate(map: Beatmaps.FromId, params: CalculateParams): Promise<any> { };
-    public async CalculateMultipleAccs(map: Beatmaps.FromId, params: MultipleParams): Promise<any> { };
+export abstract class CalculatorBase {
+    public abstract Calculate(map: Beatmaps.FromId, params: CalculateParams): Promise<CalculatorOut>;
+    public abstract CalculateMultipleAccs(map: Beatmaps.FromId, params: MultipleParams): Promise<CalculatorMultipleOut>;
     constructor() { };
 }
 

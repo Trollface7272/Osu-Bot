@@ -12,15 +12,14 @@ import { CalculatorOut } from "@osuapi/calculator/base";
 
 let offset = 4
 
-const formatTrackingScore = (base: MessageEmbed, score: Score.Best, pp: number, calculatod: CalculatorOut) => {
+const formatTrackingScore = (base: MessageEmbed, score: Score.Best, pp: number|string, calculatod: CalculatorOut) => {
     const beatmap = score.Beatmap as Beatmaps.FromId
     let description = `**[${score.BeatmapSet.Title} [${score.Beatmap.Version}]](${score.ScoreUrl}) +${score.Mods.length > 0 ? score.Mods.join("") : "NoMod"}** [${Math.round(calculatod.difficulty.Star * 100) / 100}★]\n`
     description += `▸ ${GradeEmotes[score.Rank]} ▸ **${score.Pp}**/${Math.round(calculatod.performance.total * 1000) / 1000}pp▸ ${Math.round(score.Accuracy * 10000) / 100}% (${pp > 0 ? `+${pp}` : pp}pp)\n`
     description += `▸ ${score.Score.toLocaleString()} ▸ ${GetCombo(score.MaxCombo, beatmap.MaxCombo, score.Beatmap.ModeNum)} ▸ [${GetHits(score.Counts, score.Beatmap.ModeNum)}]\n`
-
+    description += `▸ Score Set ${score.CreatedAt.toDiscordToolTip()}\n`
     const embed = new MessageEmbed(base)
-        .setAuthor(`${score.User.Username} gained a new #${score.Index} top play.`, score.User.AvatarUrl, score.User.ProfileUrl)
-        .setFooter(`Set ${score.CreatedAt.toDiscordToolTip()}Ago\n`)
+        .setAuthor({name: `${score.User.Username} gained a new #${score.Index} top play.`, iconURL: score.User.AvatarUrl, url: score.User.ProfileUrl})
         .setDescription(description)
         .setThumbnail(`https://b.ppy.sh/thumb/${score.Beatmap.SetId}l.jpg`)
     return embed

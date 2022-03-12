@@ -1,4 +1,4 @@
-import { GetUser, RefreshToken } from "@database/users"
+import { GetUser } from "@database/users"
 import { iUser } from "@interfaces/database"
 import { BitModsFromString, CalculatorOut } from "@osuapi/calculator/base"
 import { ApiCalculator } from "@osuapi/calculator/calculator"
@@ -6,14 +6,14 @@ import { GameModes } from "@osuapi/consts"
 import { Beatmaps } from "@osuapi/endpoints/beatmap"
 import { Profile } from "@osuapi/endpoints/profile"
 import { Score } from "@osuapi/endpoints/score"
-import { Errors, OsuApiError } from "@osuapi/error"
+import { Errors } from "@osuapi/error"
 import { OsuApi } from "@osuapi/index"
-import { MessageEmbed, MessageOptions, TextBasedChannels } from "discord.js"
+import { MessageEmbed, MessageOptions, TextBasedChannel } from "discord.js"
 import { ErrorCodes, ErrorHandles } from "./errors"
 import logger from "./logger"
 
 interface hitcounts { "50": number, "100": number, "300": number, "geki": number, "katu": number, "miss": number }
-
+interface objects { circles: number, sliders: number, spinners: number }
 const DifficultyEmoteIds = [
     ["858310858303864852", "858310858362978324", "858310858311729163", "858310858165190667", "858310858299408384", "858310857909075999"],
     ["858310830269399071", "858310830847557642", "858310830763671572", "858310830671003649", "858310830927118356", "858310830714257408"],
@@ -109,6 +109,8 @@ export interface parsedArgs {
     Random?: boolean
     Map?: string
     Mods?: number
+    Count?: boolean
+    Self?: boolean
 }
 
 export const ParseArgs = (args: string[], command: string): parsedArgs => {
@@ -116,6 +118,7 @@ export const ParseArgs = (args: string[], command: string): parsedArgs => {
     CommandGamemodes.map((e, index) => {
         e.map(el => { if (el.includes(command)) out.Gamemode = index as 0 | 1 | 2 | 3 })
     })
+    const name = []
     for (let i = 0; i < args.length; i++) {
         const el = args[i];
         switch (el) {
@@ -144,34 +147,37 @@ export const ParseArgs = (args: string[], command: string): parsedArgs => {
             case "rand":
                 out.Random = true
                 break
+            case "c":
+                out.Count = true
+                break;
             default:
                 const num = parseInt(el, 10)
                 if (el.isNumber() && num <= 100 && num > 0) {
                     out.Specific.push(num)
-                } else if(el.startsWith("+")) {
+                } else if (el.startsWith("+")) {
                     const mods = el.slice(1)
                     out.Mods = BitModsFromString(mods)
-                } else out.Name = el
-
-
+                } else name.push(el)
         }
     }
+    if (name.length > 0) out.Name = name.join(" ")
+    else out.Self = true
     return out
 }
 
-export const FindMapInConversation = async (channel: TextBasedChannels): Promise<string> => {
+export const FindMapInConversation = async (channel: TextBasedChannel): Promise<string> => {
     const messages = await channel.messages.fetch({ limit: 50 })
-    
+
     for (const key of messages.keys()) {
         const msg = messages.get(key)
-        
+
         if (!msg || msg.embeds?.length == 0) continue
 
-        if (msg.embeds[0].author?.url?.startsWith("https://osu.ppy.sh/b/")) 
+        if (msg.embeds[0].author?.url?.startsWith("https://osu.ppy.sh/b/"))
             return msg.embeds[0].author && msg.embeds[0].author.url.split("https://osu.ppy.sh/b/")[1].replace(/[)]/g, "")
-        else if (msg.embeds[0].description?.includes("https://osu.ppy.sh/b/")) 
+        else if (msg.embeds[0].description?.includes("https://osu.ppy.sh/b/"))
             return msg.embeds[0].description.split("https://osu.ppy.sh/b/", 2)[1].split(")")[0].replace(/[)]/g, "")
-        
+
     }
     return "Not Found"
 }
@@ -183,7 +189,7 @@ export const GetOsuToken = async (discordId: string, discordName: string) => {
     return data.osu.token
 }
 
-const GetOsuProfileOptions = async (userId: string, Name: (number|string)=undefined, Mode: (0 | 1 | 2 | 3)=0) => {
+const GetOsuProfileOptions = async (userId: string, Name: (number | string) = undefined, Mode: (0 | 1 | 2 | 3) = 0) => {
     let [user, err]: [iUser, any] = await HandlePromise(GetUser(userId))
 
     const profileOptions = { id: Name, mode: Mode, self: false, token: user?.osu?.token || undefined, OAuthId: userId }
@@ -219,7 +225,7 @@ const HandleApiError = (err: any) => {
     }
 }
 
-export const GetOsuProfile = async (userId: string, Name: number|string, Mode: 0 | 1 | 2 | 3): Promise<Profile.FromId | MessageOptions> => {
+export const GetOsuProfile = async (userId: string, Name: number | string, Mode: 0 | 1 | 2 | 3): Promise<Profile.FromId | MessageOptions> => {
     const profileOptions = await GetOsuProfileOptions(userId, Name, Mode)
     const [profile, err] = await HandlePromise(OsuApi.Profile.FromId(profileOptions))
     if (err) return HandleApiError(err)
@@ -228,7 +234,7 @@ export const GetOsuProfile = async (userId: string, Name: number|string, Mode: 0
 
 export const GetOsuTopPlays = async (userId: string, Name: number, Mode: 0 | 1 | 2 | 3, options: Score.BestParams): Promise<Score.Recent | MessageOptions> => {
     const profileOptions = await GetOsuProfileOptions(userId, Name, Mode)
-    
+
     const [scores, err] = await HandlePromise<Score.Recent>(OsuApi.Score.GetBest({ ...profileOptions, ...options } as unknown))
     if (err) return HandleApiError(err)
     return scores
@@ -281,6 +287,21 @@ export const GetHits = (counts: hitcounts, mode: number): string => {
             return `${counts[300]}/${counts[100]}/${counts[50]}/${counts.katu}/${counts.miss}`
         case 3:
             return `${counts.geki}/${counts[300]}/${counts.katu}/${counts[100]}/${counts[50]}/${counts.miss}`
+        default:
+            logger.Error(`Unknown gamemode: ${mode}`)
+            return "Unknown"
+    }
+}
+
+export const CalculateProgress = (counts: hitcounts, objects: objects, mode: 0|1|2|3) => {
+    switch (mode) {
+        case 1:
+        case 0:
+            return ((counts[300] + counts[100] + counts[50] + counts.miss) / (objects.circles + objects.sliders + objects.spinners) * 100).roundFixed(2)
+        case 2:
+            return ((counts[300] + counts[100] + counts[50] + counts.miss + counts.katu) / (objects.circles + objects.sliders + objects.spinners) * 100).roundFixed(2)
+        case 3:
+            return ((counts.geki + counts[300] + counts.katu + counts[100] + counts[50] + counts.miss + counts.katu) / (objects.circles + objects.sliders + objects.spinners) * 100).roundFixed(2)
         default:
             logger.Error(`Unknown gamemode: ${mode}`)
             return "Unknown"
@@ -420,7 +441,7 @@ export const LeaderboardsFcPp = async (score: Score.Leaderboards, beatmap: Beatm
         let counts = score.Counts
         counts[300] += counts.miss
         counts.miss = 0
-        
+
         return await ApiCalculator.Calculators[score.ModeInt].Calculate(beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: beatmap.MaxCombo, Counts: counts })
     } else {
         let counts = score.Counts
@@ -428,17 +449,17 @@ export const LeaderboardsFcPp = async (score: Score.Leaderboards, beatmap: Beatm
         counts.miss = 0
         counts[50] = 0
         counts[100] = 0
-        
+
         return await ApiCalculator.Calculators[score.ModeInt].Calculate(beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: beatmap.MaxCombo, Counts: counts })
     }
 }
 
-export const TopFcPp = async (score: Score.Recent) => {
+export const TopFcPp = async (score: Score.Best) => {
     if (score.MaxCombo < score.MaxCombo - 15 || score.Counts.miss > 0) {
         let counts = score.Counts
         counts[300] += counts.miss
         counts.miss = 0
-        
+
         return await ApiCalculator.Calculators[score.ModeInt].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
     } else {
         let counts = score.Counts
@@ -446,7 +467,28 @@ export const TopFcPp = async (score: Score.Recent) => {
         counts.miss = 0
         counts[50] = 0
         counts[100] = 0
-        
+
         return await ApiCalculator.Calculators[score.ModeInt].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
     }
+}
+
+export const RecentPp = async (score: Score.Recent) => {
+    let normal: CalculatorOut = await ApiCalculator.Calculators[score.ModeInt].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: score.Counts })
+    let fc: CalculatorOut
+    if (score.MaxCombo < score.MaxCombo - 15 || score.Counts.miss > 0) {
+        let counts = score.Counts
+        counts[300] += counts.miss
+        counts.miss = 0
+
+        fc = await ApiCalculator.Calculators[score.ModeInt].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
+    } else {
+        let counts = score.Counts
+        counts[300] += counts[50] + counts[100]
+        counts.miss = 0
+        counts[50] = 0
+        counts[100] = 0
+
+        fc = await ApiCalculator.Calculators[score.ModeInt].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
+    }
+    return [normal, fc]
 }

@@ -1,12 +1,14 @@
-import { GetPrefix } from "@database/guild"
 import { Message } from "discord.js"
 import Client from "@bot/client"
 import { OnMessage } from "@database/users"
 import logger from "@functions/logger"
+import { extendMessage } from "@bot/extends/ExtendedMessage"
 
-export const callback = async (_: Client, message: Message) => {
-    if (message.author.bot) return
-    const prefix = process.env.NODE_ENV == "development" ? "." : await GetPrefix(message.guildId)
+export const callback = async (_: Client, _message: Message) => {
+    if (_message.author.bot) return
+    let message = await extendMessage(_message)
+    
+    const prefix = process.env.NODE_ENV == "development" ? "." : message.guild.data.prefix
     if (!message.content.startsWith(prefix)) return OnMessage(message.author.id, message.guildId, false)
     OnMessage(message.author.id, message.guildId, true)
     

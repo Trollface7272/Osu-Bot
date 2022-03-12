@@ -1,13 +1,14 @@
 import { GamemodeNames, GradeEmotes } from "@consts/osu"
 import { ErrorHandles } from "@functions/errors"
-import { TopFcPp, GetCombo, GetFlagUrl, GetHits, GetOsuProfile, GetOsuTopPlays, GetProfileLink, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
+import { TopFcPp, GetCombo, GetFlagUrl, GetHits, GetProfileLink, HandlePromise, ParseArgs, parsedArgs } from "@functions/utils"
 import { OsuApi } from "@osuapi/index"
 import { Score } from "@osuapi/endpoints/score"
 import { randomInt } from "crypto"
-import { CommandInteraction, Message, MessageEmbed, MessageOptions } from "discord.js"
+import { CommandInteraction, MessageEmbed, MessageOptions } from "discord.js"
 import { CalculatorOut } from "@osuapi/calculator/base"
 import { Profile } from "@osuapi/endpoints/profile"
 import { Beatmaps } from "@osuapi/endpoints/beatmap"
+import { ExtendedMessage } from "@bot/extends/ExtendedMessage"
 
 
 const FormatTopPlay = (Gamemode: 0 | 1 | 2 | 3, score: Score.Best, calculated: CalculatorOut): string => {
@@ -24,7 +25,7 @@ const FormatTopPlay = (Gamemode: 0 | 1 | 2 | 3, score: Score.Best, calculated: C
     return description
 }
 
-const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Reversed, Specific, Random }: parsedArgs): Promise<MessageOptions> => {
+const osuTop = async (userId: string, { Self, Name, Gamemode, GreaterThan, Best, Reversed, Specific, Random }: parsedArgs): Promise<MessageOptions> => {
     let offset = 0, limit = 6
     if (Specific.length > 0) {
         Specific.sort((a, b) => a - b)
@@ -37,14 +38,15 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
         limit = 1
         offset = randomInt(100)
     }
-    const [profile, err] = await HandlePromise<Profile.FromId>(GetOsuProfile(userId, Name, Gamemode))
+    const [profile, err] = await HandlePromise<Profile.FromId>(OsuApi.Profile.FromId({OAuthId: userId, id: Name, mode: Gamemode, self: Self}))
     if (err) {
         if (err.error && ErrorHandles[err.error]) return ErrorHandles[err.error](err)
         return ErrorHandles.Unknown(err)
     }
     let id = profile.Id
     
-    let [scores, err2] = await HandlePromise<Score.Best[]>(GetOsuTopPlays(userId, id, Gamemode, { offset, limit: limit }))
+
+    let [scores, err2] = await HandlePromise<Score.Best[]>(OsuApi.Score.GetBest({OAuthId: userId, id, mode: Gamemode, offset, limit}))
     if (err2) {
         if (err2.error && ErrorHandles[err2.error]) return ErrorHandles[err2.error](err2)
         return ErrorHandles.Unknown(err2)
@@ -87,29 +89,9 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
         if (calculated.performance.total < score.Pp) calculated.performance.total = score.Pp
         return FormatTopPlay(Gamemode, score, calculated)
     }))).join("")
-    /*for (let i = 0; i < Math.min(scores.length, 5); i++) {
-        const score = scores[i]
-        let calculated: CalculatorOut
-        if (score.MaxCombo < score.MaxCombo - 15 || score.Counts.miss > 0) {
-            let counts = score.Counts
-            counts[300] += counts.miss
-            counts.miss = 0
-            calculated = await ApiCalculator.Calculators[Gamemode].Calculate(score.Beatmap, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
-        } else {
-            let counts = score.Counts
-            counts[300] += counts[50] + counts[100]
-            counts.miss = 0
-            counts[50] = 0
-            counts[100] = 0
-            calculated = await ApiCalculator.Calculators[Gamemode].Calculate(score.Beatmap, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: counts })
-        }
-        if (calculated.performance.total < score.Performance) calculated.performance.total = score.Performance
-        desc += FormatTopPlay(Gamemode, score, calculated)
-    }*/
-
 
     const embed = new MessageEmbed()
-        .setAuthor(`Top ${Math.min(scores.length, 5)} ${GamemodeNames[Gamemode]} Play${scores.length > 1 ? "s" : ""} for ${profile.Username}`, GetFlagUrl(profile.Country.code), GetProfileLink(profile.Id, Gamemode))
+        .setAuthor({name: `Top ${Math.min(scores.length, 5)} ${GamemodeNames[Gamemode]} Play${scores.length > 1 ? "s" : ""} for ${profile.Username}`, iconURL: GetFlagUrl(profile.Country.code), url: GetProfileLink(profile.Id, Gamemode)})
         .setDescription(desc)
         //.setFooter(GetServer())
         .setThumbnail(profile.AvatarUrl)
@@ -117,12 +99,13 @@ const osuTop = async (userId: string, { Name, Gamemode, GreaterThan, Best, Rever
 }
 
 
-const messageCallback = async (message: Message, args: string[]) => {
+const messageCallback = async (message: ExtendedMessage, args: string[]) => {
     const parsedArgs = ParseArgs(args, message.content.toLocaleLowerCase().split(" ")[0])
+    if (parsedArgs.Self) parsedArgs.Name = message.author.data.osu?.id?.toString()
 
     const data = await osuTop(message.author.id, parsedArgs)
 
-    message.reply(data)
+    await message.reply(data)
 }
 
 const interactionCallback = (interaction: CommandInteraction) => {
