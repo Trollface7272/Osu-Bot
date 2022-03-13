@@ -266,6 +266,7 @@ export const GetCombo = (combo: number, maxCombo: number, mode: number): string 
     return `x${combo}/${maxCombo}`
 }
 
+//TODO: For the love of god refactor this
 export const DateDiff = (date1: Date, date2: Date) => {
     const diff: number = date2.getTime() - date1.getTime()
     const out: string[] = []
