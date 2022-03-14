@@ -22,10 +22,39 @@ const formatMultipleScore = (score: Score.Recent, [normal, fc]: [CalculatorOut, 
 const recent = async (id: string, args: parsedArgs): Promise<MessageOptions> => {
     if (args.Count) return count(id, args)
     if (args.List) return listScore(id, args)
+    if (args.Best) return recentBest(id, args)
     return singleScore(id, args)
 }
 
-const singleScore = async (id: string, { Name, Gamemode, Specific }: parsedArgs): Promise<MessageOptions> => {
+const recentBest = async (id: string, { Name, Gamemode, Specific }: parsedArgs): Promise<MessageOptions> =>{
+    let osuId = await Utils.lookupName(Name ?? (await GetUser(id)).osu.id as any, id)
+    const offset = Specific[0] ? Specific[0] - 1 : 0
+
+    const [scores, err] = await HandlePromise<Score.Best[]>(OsuApi.Score.GetBest({id: osuId, OAuthId: id, limit: 100, offset: 0, mode: Gamemode}))
+    if (err) return HandleError(err)
+    
+    scores.sort((a, b) => a.CreatedAt.getTime() - b.CreatedAt.getTime())
+    
+    const score = scores[offset]
+
+    const [beatmap, err2] = await HandlePromise<Beatmaps.FromId>(OsuApi.Beatmap.ById({ id: score.Beatmap.Id, OAuthId: id }))
+    if (err2) return HandleError(err2)
+    
+    score.SetCombo(beatmap.MaxCombo)
+    const [recent, fc] = await RecentPp(score)
+
+    let desc  = `**${score.Index}. ${Util.escapeMarkdown(score.BeatmapSet.Title)} [${Util.escapeMarkdown(score.Beatmap.Version)}] +${score.Mods.join("")}** [${score.Beatmap.StarRating}★]`
+        desc += `▸ ${score.Rank} ▸ **${recent.performance.total.roundFixed(2)}pp**/${fc.performance.total.roundFixed(2)} ▸ ${(score.Accuracy * 100).roundFixed(2)}%`
+        desc += `▸ ${score.Score.toLocaleString()} ▸ ${GetCombo(score.MaxCombo, score.Beatmap.MaxCombo, Gamemode)} ▸ ${GetHits(score.Counts, Gamemode)}`
+        desc += `▸ Score Set ${score.CreatedAt.toDiscordToolTip()} Ago`
+    const embed = new MessageEmbed()
+        .setAuthor({name: `Top ${offset + 1} Standard Play for ${score.User.Username}`, iconURL: GetFlagUrl(score.User.CountryCode), url: score.User.ProfileUrl})
+        .setDescription(desc)
+
+    return { embeds: [embed] }
+}
+
+const singleScore = async (id: string, { Name, Gamemode, Specific, IncludeFails }: parsedArgs): Promise<MessageOptions> => {
     let osuId = await Utils.lookupName(Name ?? (await GetUser(id)).osu.id as any, id)
 
     const offset = Specific[0] || 0
@@ -35,7 +64,7 @@ const singleScore = async (id: string, { Name, Gamemode, Specific }: parsedArgs)
     const [scores, err] = await HandlePromise<Score.Recent[]>(OsuApi.Score.GetRecent({ OAuthId: id, id: osuId, mode: Gamemode, fails: true }))
     if (err) return HandleError(err)
 
-    const score = scores[offset]
+    const score = scores.filter(el => el.Rank !== "F" || IncludeFails)[offset]
     const [beatmap, err2] = await HandlePromise<Beatmaps.FromId>(OsuApi.Beatmap.ById({ id: score.Beatmap.Id, OAuthId: id }))
     if (err2) return HandleError(err2)
     const beatmapSet = score.BeatmapSet
@@ -64,7 +93,7 @@ const singleScore = async (id: string, { Name, Gamemode, Specific }: parsedArgs)
     return { embeds: [embed] }
 }
 
-const listScore = async (id: string, { Name, Gamemode, Specific }: parsedArgs): Promise<MessageOptions> => {
+const listScore = async (id: string, { Name, Gamemode, Specific, IncludeFails }: parsedArgs): Promise<MessageOptions> => {
     let osuId = await Utils.lookupName(Name ?? (await GetUser(id)).osu.id as any, id)
 
     let scoreIdx = Specific?.length > 0 ? Specific : [0, 1, 2, 3, 4]
@@ -72,7 +101,8 @@ const listScore = async (id: string, { Name, Gamemode, Specific }: parsedArgs): 
 
     const [allScores, err] = await HandlePromise<Score.Recent[]>(OsuApi.Score.GetRecent({ OAuthId: id, id: osuId, mode: Gamemode, fails: true }))
     if (err) return HandleError(err)
-    let scores: Score.Recent[] = scoreIdx.map(e => allScores[e])
+    const filteredScores = allScores.filter(el => el.Rank !== "F" || IncludeFails)
+    let scores: Score.Recent[] = scoreIdx.map(e => filteredScores[e])
     
     let beatmapsToGet: number[] = scores.map(e => e.Beatmap.Id)
     beatmapsToGet = beatmapsToGet.filter((el, i) => beatmapsToGet.indexOf(el) === i)

@@ -124,10 +124,11 @@ export interface parsedArgs {
     Count?: boolean
     Self?: boolean
     List?: boolean
+    IncludeFails?: boolean
 }
 
 export const ParseArgs = (args: string[], command: string): parsedArgs => {
-    let out: parsedArgs = { Gamemode: 0, Specific: [], Mods: 0 }
+    let out: parsedArgs = { Gamemode: 0, Specific: [], Mods: 0, IncludeFails: true }
     CommandGamemodes.map((e, index) => {
         e.map(el => { if (el.includes(command)) out.Gamemode = index as 0 | 1 | 2 | 3 })
     })
@@ -166,6 +167,10 @@ export const ParseArgs = (args: string[], command: string): parsedArgs => {
             case "l":
                 out.List = true
                 break;
+            case "p":
+            case "ps":
+                out.IncludeFails = false
+                break
             default:
                 const num = parseInt(el, 10)
                 if (el.isNumber() && num <= 100 && num > 0) {

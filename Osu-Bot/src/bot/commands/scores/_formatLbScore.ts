@@ -6,7 +6,7 @@ import { pseudoRandomBytes } from "crypto"
 import { EmbedAuthorData, MessageActionRow, MessageButton, MessageEmbed, MessageOptions } from "discord.js"
 
 const formatLbScore = async (score: Score.Leaderboards, beatmap: Beatmaps.FromId, i: number, isAuthor: boolean) => {
-    let res = `**${i + 1}.** ${isAuthor ? "__" : ""}**[${score.User.Username}](${score.User.ProfileUrl})**${isAuthor ? "__" : ""} **${score.Pp.roundFixed(2)}pp** **${(score.Accuracy * 100).roundFixed(2)}%** **+${score.Mods.length == 0 ? "Nomod" : score.Mods.join("")}**\n`
+    let res = `**${i + 1}.** ${isAuthor ? "__" : ""}**[${score.User.Username}](${score.User.ProfileUrl})**${isAuthor ? "__" : ""} **${score.Pp?.roundFixed(2) || 0}pp** **${(score.Accuracy * 100).roundFixed(2)}%** **+${score.Mods.length == 0 ? "Nomod" : score.Mods.join("")}**\n`
     res += `▸ ${GradeEmotes[score.Rank]} ${score.Score.toLocaleString()} **${score.MaxCombo}x**/${beatmap.MaxCombo}x ${score.CreatedAt.toDiscordToolTip()}`
     return res
 }

@@ -115,19 +115,19 @@ export namespace Score {
             return data.map((score, index) => { score.index = index + offset + 1; return new Type(score) })
         }
 
-        public async GetBest(param: BestParams) {
+        public async GetBest(param: BestParams): Promise<Best[]> {
             return this._Get<ResponseTypes.Score.Best>(param, "best", Best)
         }
 
-        public async GetFirsts(param: BestParams) {
+        public async GetFirsts(param: BestParams): Promise<Firsts[]> {
             return this._Get<ResponseTypes.Score.Firsts>(param, "firsts", Firsts)
         }
 
-        public async GetRecent(param: RecentParams) {
+        public async GetRecent(param: RecentParams): Promise<Recent[]> {
             return this._Get<ResponseTypes.Score.Recent>(param, "recent", Recent, { include_fails: param.fails ? "1" : "0"})
         }
 
-        public async GetPinned(param: BestParams) {
+        public async GetPinned(param: BestParams): Promise<Best[]> {
             return this._Get<ResponseTypes.Score.Best>(param, "pinned", Best)
         }
 
