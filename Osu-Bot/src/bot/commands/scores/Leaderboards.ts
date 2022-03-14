@@ -4,7 +4,7 @@ import { Score } from "@osuapi/endpoints/score"
 import { OsuApi } from "@osuapi/index"
 import { InteractionCache } from "@api/cache/Interactions"
 import { randomBytes } from "crypto"
-import { ButtonInteraction, CommandInteraction, Message, MessageOptions } from "discord.js"
+import { ButtonInteraction, CommandInteraction, Message, MessageEmbed, MessageOptions } from "discord.js"
 import { format } from "./_formatLbScore"
 
 
@@ -15,6 +15,8 @@ const newLeaderboards = async (id: string, { Map, Specific }: parsedArgs): Promi
 
     const [lb, err] = await HandlePromise<Score.BeatmapScores>(OsuApi.Score.Leaderboards({ id: parseInt(Map), OAuthId: id }))
     if (err) return HandleError(err)
+
+    if (lb.Scores.length < 0) return {embeds: [new MessageEmbed().setDescription(`No scores found`)]}
 
     let offset = Specific[0] * 10 || 0
     if (offset < 0 || offset > lb.Scores.length) offset = 0
