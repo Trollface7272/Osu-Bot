@@ -3,7 +3,7 @@ import { GetFlagUrl } from "@functions/utils"
 import { Beatmaps } from "@osuapi/endpoints/beatmap"
 import { Score } from "@osuapi/endpoints/score"
 import { pseudoRandomBytes } from "crypto"
-import { MessageActionRow, MessageButton, MessageEmbed, MessageOptions } from "discord.js"
+import { EmbedAuthorData, MessageActionRow, MessageButton, MessageEmbed, MessageOptions } from "discord.js"
 
 const formatLbScore = async (score: Score.Leaderboards, beatmap: Beatmaps.FromId, i: number, isAuthor: boolean) => {
     let res = `**${i + 1}.** ${isAuthor ? "__" : ""}**[${score.User.Username}](${score.User.ProfileUrl})**${isAuthor ? "__" : ""} **${score.Pp.roundFixed(2)}pp** **${(score.Accuracy * 100).roundFixed(2)}%** **+${score.Mods.length == 0 ? "Nomod" : score.Mods.join("")}**\n`
@@ -11,7 +11,7 @@ const formatLbScore = async (score: Score.Leaderboards, beatmap: Beatmaps.FromId
     return res
 }
 
-export const format = async (lb: Score.BeatmapScores, map: Beatmaps.FromId, offset: number, intId: string, global: boolean): Promise<MessageOptions> => {
+export const format = async (lb: Score.BeatmapScores, map: Beatmaps.FromId, offset: number, intId: string, global: boolean, author: EmbedAuthorData): Promise<MessageOptions> => {
     if (!map.HasLeaderboards) return { embeds: [new MessageEmbed().setDescription(`Map doesn't have leaderboards`)] }
     if (lb.Scores.length === 0) return { embeds: [new MessageEmbed().setDescription(`No scores found`)] }
     
@@ -20,9 +20,9 @@ export const format = async (lb: Score.BeatmapScores, map: Beatmaps.FromId, offs
     const row = new MessageActionRow().addComponents(buttons)
 
     const scores = lb.Scores.slice(offset, offset + 10)
-    const formated = (await Promise.all(scores.map((score, i) => formatLbScore(score, map, offset+i, lb.UserScore?.position === i + 1)))).join("\n")
+    const formated = (await Promise.all(scores.map((score, i) => formatLbScore(score, map, offset+i, lb.UserScore?.position === offset + i + 1)))).join("\n")
     const embed = new MessageEmbed()
-        .setAuthor(`Top ${offset+1}-${Math.min(offset+10, lb.Scores.length)} ${global ? "Global" : lb.Scores[0].User.CountryCode} Scores On ${map.BeatmapSet.Title} [${map.Version}]`, GetFlagUrl(lb.Scores[0].User.CountryCode), map.Url)
+        .setAuthor(author)
         .setDescription(formated)
         .setThumbnail(map.BeatmapSet.Covers["list@2x"])
     return {

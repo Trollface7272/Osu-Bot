@@ -123,6 +123,7 @@ export interface parsedArgs {
     Mods?: number
     Count?: boolean
     Self?: boolean
+    List?: boolean
 }
 
 export const ParseArgs = (args: string[], command: string): parsedArgs => {
@@ -161,6 +162,9 @@ export const ParseArgs = (args: string[], command: string): parsedArgs => {
                 break
             case "c":
                 out.Count = true
+                break;
+            case "l":
+                out.List = true
                 break;
             default:
                 const num = parseInt(el, 10)
@@ -486,7 +490,7 @@ export const TopFcPp = async (score: Score.Best) => {
 }
 
 export const RecentPp = async (score: Score.Recent) => {
-    let normal: CalculatorOut = await ApiCalculator.Calculators[score.ModeInt].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.Beatmap.MaxCombo, Counts: score.Counts })
+    let normal: CalculatorOut = await ApiCalculator.Calculators[score.ModeInt].Calculate(score.Beatmap as unknown as Beatmaps.FromId, { Mods: score.Mods, Combo: score.MaxCombo, Counts: score.Counts })
     let fc: CalculatorOut
     if (score.MaxCombo < score.MaxCombo - 15 || score.Counts.miss > 0) {
         let counts = score.Counts

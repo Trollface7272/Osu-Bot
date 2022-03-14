@@ -85,7 +85,7 @@ export namespace Score {
     }
 
     export interface LeaderboardsParams {
-        id: number, mode?: number|string, mods?: number, country?: boolean, OAuthId?: string
+        id: number, mode?: number|string, mods?: number, type?: string, OAuthId?: string
     }
 
     export class Api {
@@ -131,13 +131,13 @@ export namespace Score {
             return this._Get<ResponseTypes.Score.Best>(param, "pinned", Best)
         }
 
-        public async Leaderboards({ id, mode, mods, country, OAuthId }: LeaderboardsParams) {
+        public async Leaderboards({ id, mode, mods, type, OAuthId }: LeaderboardsParams) {
             if (typeof mode === "number") mode = GameMode[mode]
             const endpoint = `${v2ApiLink}/beatmaps/${id}/scores`
             const params = {
                 mode: mode || "osu",
                 mods: mods ?? undefined,
-                type: country ? "country" : undefined
+                type: type
             }
             const data = await this.Get<ResponseTypes.Score.BeatmapScores>(endpoint, params, OAuthId)
             return new BeatmapScores(data)

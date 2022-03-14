@@ -9,21 +9,21 @@ import { format } from "./_formatLbScore"
 
 
 
-const newLaderboards = async (id: string, { Map, Specific }: parsedArgs): Promise<MessageOptions> => {
+const newLeaderboards = async (id: string, { Map, Specific }: parsedArgs): Promise<MessageOptions> => {
     const [map, er] = await HandlePromise<Beatmaps.FromId>(OsuApi.Beatmap.ById({ id: parseInt(Map), OAuthId: id }))
     if (er) return HandleError(er)
 
-    const [lb, err] = await HandlePromise<Score.BeatmapScores>(OsuApi.Score.Leaderboards({ id: parseInt(Map), type: "country", OAuthId: id }))
+    const [lb, err] = await HandlePromise<Score.BeatmapScores>(OsuApi.Score.Leaderboards({ id: parseInt(Map), type: "friend", OAuthId: id }))
     if (err) return HandleError(err)
 
     let offset = Specific[0] * 10 || 0
     if (offset < 0 || offset > lb.Scores.length) offset = 0
     const intId = randomBytes(16).toString("hex")
     InteractionCache.Add(intId, { map, lb })
+    
+    
 
-
-
-    return format(lb, map, offset, intId, false, { name: `Top ${offset + 1}-${Math.min(offset + 10, lb.Scores.length)} ${lb.Scores[0].User.CountryCode} Scores On ${map.BeatmapSet.Title} [${map.Version}]`, iconURL: GetFlagUrl(lb.Scores[0].User.CountryCode), url: map.Url })
+    return format(lb, map, offset, intId, false, {name: `Top ${offset+1}-${Math.min(offset+10, lb.Scores.length)} Friend Scores On ${map.BeatmapSet.Title} [${map.Version}]`, iconURL: GetFlagUrl(lb.Scores[0].User.CountryCode), url: map.Url })
 }
 
 
@@ -39,7 +39,7 @@ const messageCallback = async (message: Message, args: string[]) => {
     if (!params.Map || params.Map === "Not Found") return message.reply("**No maps found in conversation**")
 
 
-    const data = await newLaderboards(message.author.id, params)
+    const data = await newLeaderboards(message.author.id, params)
 
 
     message.reply(data)
@@ -52,20 +52,20 @@ const buttonInteraction = async (interaction: ButtonInteraction) => {
     if (!d) return
     const { lb, map } = d
 
-    interaction.update(await format(lb, map, offset, id, false, { name: `Top ${offset + 1}-${Math.min(offset + 10, lb.Scores.length)} ${lb.Scores[0].User.CountryCode} Scores On ${map.BeatmapSet.Title} [${map.Version}]`, iconURL: GetFlagUrl(lb.Scores[0].User.CountryCode), url: map.Url }))
+    interaction.update(await format(lb, map, offset, id, false, {name: `Top ${offset+1}-${Math.min(offset+10, lb.Scores.length)} Friend Scores On ${map.BeatmapSet.Title} [${map.Version}]`, iconURL: GetFlagUrl(lb.Scores[0].User.CountryCode), url: map.Url }))
 }
 
 const interactionCallback = (interaction: CommandInteraction) => {
     if (interaction.isButton()) return buttonInteraction(interaction as ButtonInteraction)
 }
 
-const name = ["clb", "countrylb", "countryleaderboards", "countrylb"]
+const name = ["flb", "friendlb", "friendleaderboards", "fleaderboards"]
 export const messageCommand = {
     name,
     callback: messageCallback
 }
 
 export const interactionCommand = {
-    name: "country leaderboards",
+    name: "friends leaderboards",
     callback: interactionCallback
 }
