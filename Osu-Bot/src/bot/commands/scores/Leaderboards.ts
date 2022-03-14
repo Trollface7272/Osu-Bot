@@ -16,7 +16,7 @@ const newLeaderboards = async (id: string, { Map, Specific }: parsedArgs): Promi
     const [lb, err] = await HandlePromise<Score.BeatmapScores>(OsuApi.Score.Leaderboards({ id: parseInt(Map), OAuthId: id }))
     if (err) return HandleError(err)
 
-    if (lb.Scores.length < 0) return {embeds: [new MessageEmbed().setDescription(`No scores found`)]}
+    if (lb.Scores.length === 0) return {embeds: [new MessageEmbed().setDescription(`No scores found`)]}
 
     let offset = Specific[0] * 10 || 0
     if (offset < 0 || offset > lb.Scores.length) offset = 0
