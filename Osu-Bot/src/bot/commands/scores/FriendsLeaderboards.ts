@@ -17,8 +17,6 @@ const newLeaderboards = async (id: string, { Map, Specific }: parsedArgs): Promi
     if (err) return HandleError(err)
 
     if (lb.Scores.length === 0) return {embeds: [new MessageEmbed().setDescription(`No scores found`)]}
-
-    console.log(lb);
     
 
     let offset = Specific[0] * 10 || 0
