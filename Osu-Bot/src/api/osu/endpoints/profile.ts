@@ -20,7 +20,7 @@ export namespace Profile {
         public get PmFriendsOnly() { return this.raw.pm_friends_only }
         public get ProfileColor() { return this.raw.profile_colour }
         public get Username() { return this.raw.username }
-        public get ProfileUrl() { return "https://osu.ppy.sh/user/" + this.raw.id }
+        public get ProfileUrl() { return "https://osu.ppy.sh/u/" + this.raw.id }
         public get Flag() { return `https://flagcdn.com/w80/${this.raw.country_code.toLowerCase()}.png` }
 
         constructor(raw: ResponseTypes.User.Compact) { this.raw = raw }
