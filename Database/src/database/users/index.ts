@@ -49,9 +49,8 @@ export const RefreshOsuToken = async ({ id, tokenType, accessToken, expires, ref
 export const onMessage = async (userId: string, isCommand: boolean) => {
     let inc = isCommand ? { messages: 1, commands: 1 } : { messages: 1 }
     //@ts-ignore
-    const updated = (await collection.updateOne({ _id: userId }, { $inc: inc }))
-    //@ts-ignore
-    if (updated.modifiedCount == 0) CreateUser({ userId })
+    await collection.updateOne({ _id: userId }, { $inc: inc })
+
 }
 
 export const addTempKey = (userId: string, key: string, scopes: string) => {
