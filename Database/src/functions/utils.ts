@@ -1,7 +1,6 @@
-import axios, { AxiosResponse } from "axios"
 import { NextFunction, Request, Response } from "express"
-import { GetUser, RefreshOsuToken } from "../database/users"
-import logger from "./logger"
+
+export const DEFAULT_SCOPES = "public identify"
 
 export const ValidateSecret = (req: Request, res: Response, next: NextFunction) => {
     if (req.body.secret == process.env.SECRET) return next()

@@ -1,5 +1,6 @@
 import { connection } from "mongoose"
 import logger from "../../functions/logger"
+import { DEFAULT_SCOPES } from "../../functions/utils"
 import { iUser } from "./interfaces"
 import { UserModel } from "./schema"
 const collection = connection.collection("users")
@@ -27,7 +28,7 @@ export const GetUser = async ({ userId, name }: { userId: string, name?: string 
 
 export const SetOsuToken = async (key: string, data: { token: string, refresh: string, expireDate: Date, tokenType: string, scopes?: string }, ip: string) => {
     const user = await collection.findOne({ "osu.secret": key })
-    data.scopes = user.osu.scopes
+    data.scopes = user?.osu?.scopes || DEFAULT_SCOPES 
     await collection.updateOne({ "osu.secret": key }, { $set: { osu: data, ip } })
 }
 
