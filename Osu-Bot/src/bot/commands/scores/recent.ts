@@ -88,7 +88,7 @@ const singleScore = async (id: string, { Name, Gamemode, Specific, IncludeFails 
         .setAuthor({ name: `${beatmapSet.Title} [${beatmap.Version}] +${score.Mods.join("")} [${beatmap.StarRating.toFixed(2)}★]`, iconURL: `https://a.ppy.sh/${osuId}`, url: beatmap.Url })
         .setThumbnail(beatmapSet.Covers["list@2x"])
         .setDescription(desc)
-        .setFooter({ text: `Try #${tries} | ${DateDiff(score.CreatedAt, new Date())} ago` })
+        .setFooter({ text: `Try #${tries} | ${DateDiff(score.CreatedAt, new Date())}ago` })
 
     return { embeds: [embed] }
 }

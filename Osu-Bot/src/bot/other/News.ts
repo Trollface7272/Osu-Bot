@@ -7,7 +7,7 @@ import { OsuApi } from "@osuapi/index"
 import { MessageEmbed, TextChannel } from "discord.js"
 
 const FormatNewsPost = (embedBase: MessageEmbed, post: News.NewsPost) => {
-    let description = `[**${post.Title}**](https://osu.ppy.sh/home/news/${post.Slug})\n`
+    let description = `**[${post.Title}](https://osu.ppy.sh/home/news/${post.Slug})**\n`
     description += `${post.Preview}\n`
     description += `Posted by ${post.Author}`
 
