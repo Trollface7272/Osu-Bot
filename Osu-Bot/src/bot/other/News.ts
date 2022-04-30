@@ -25,10 +25,11 @@ export const CheckForOsuNews = async (client: Client) => {
     const lastCheckDate = new Date(event.LastChecked)
 
     const [data, err] = await HandlePromise<News.News>(OsuApi.News.GetNews({}))
+    if (err) return logger.Error("CheckForOsuNews -> Error fetching news ->", err)
 
-    const news = data.Posts.filter(val =>
+    const news = data?.Posts?.filter(val =>
         val.PublishedDate > lastCheckDate
-    )
+    ) || []
 
     if (news.length === 0) return
     
