@@ -1,5 +1,4 @@
 import { connect, connection } from "mongoose"
-import { disconnect } from "process"
 import logger from "../functions/logger"
 
 
@@ -12,7 +11,7 @@ export const Connect = async () => {
 
     connection.on('error', (error: string) => {
         logger.Log('Error in MongoDb connection: ' + error)
-        disconnect()
+        Connect()
     })
 
     connection.on('reconnected', function () {
