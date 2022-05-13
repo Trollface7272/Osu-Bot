@@ -9,11 +9,12 @@ import { MessageEmbed, TextChannel } from "discord.js";
 const FormatBeatmapSet = (beatmapSet: Beatmaps.Sets.SearchSet) => {
     const length = beatmapSet.Beatmaps[0].Length.total
     const drain = beatmapSet.Beatmaps[0].Length.drain
-    beatmapSet.Beatmaps.sort((v1, v2) => v1.StarRating - v2.StarRating)
+    const maps = beatmapSet.Beatmaps.sort((v1, v2) => v1.StarRating - v2.StarRating)
+    
     let description = `**[${beatmapSet.Artist} - ${beatmapSet.Title}](${`https://osu.ppy.sh/s/${beatmapSet.Id}`})** by **[${beatmapSet.Mapper}](https://osu.ppy.sh/u/${beatmapSet.MapperId})**\n`
     description += `**Length:** ${Math.floor(length / 60)}:${formatTime(length % 60)}${drain !== length ? (` (${Math.floor(drain / 60)}:${formatTime(drain % 60)} drain)`) : ""} **BPM:** ${beatmapSet.Bpm}\n`
-    description += `**Download:** [map](https://osu.ppy.sh/d/${beatmapSet.Id})([no vid](https://osu.ppy.sh/d/${beatmapSet.Id}n)) [Direct](http://osu.epictrolled.shop/redirect?site=osu://b/${beatmapSet.Beatmaps[0].Id})\n`
-    description += `${beatmapSet.Beatmaps.map(beatmap => `${GetDifficultyEmote(beatmap.ModeNum, beatmap.StarRating)}\`${beatmap.Version}\` [${beatmap.StarRating}\\*]`).join("\n")}\n`
+    description += `**Download:** [map](https://osu.ppy.sh/d/${beatmapSet.Id})([no vid](https://osu.ppy.sh/d/${beatmapSet.Id}n)) [Direct](http://osu.epictrolled.shop/redirect?site=osu://b/${maps[0].Id})\n`
+    description += `${maps.map(beatmap => `${GetDifficultyEmote(beatmap.ModeNum, beatmap.StarRating)}\`${beatmap.Version}\` [${beatmap.StarRating}\\*]`).join("\n")}\n`
 
     return description
 }
@@ -28,7 +29,7 @@ const _CheckForNewMaps = async (client: Client, type: string) => {
     if (!event?.RegisteredChannels) return logger.Error("RankedBeatmaps -> event is unexpected value ->", event)
 
     const channelData = await Promise.all(event.RegisteredChannels.map(async (data) => [client.channels.cache.get(data.id) || await client.channels.fetch(data.id), data.mode]))
-    const lastCheckDate = new Date(event.LastChecked)
+    const lastCheckDate = new Date("2022-05-13T00:45:20+00:00")//new Date(event.LastChecked)
 
     const [search, err] = await HandlePromise<Beatmaps.Sets.Search>(OsuApi.Beatmap.Search({ mode: 0, type: type }))
     if (err) return console.error(err)
