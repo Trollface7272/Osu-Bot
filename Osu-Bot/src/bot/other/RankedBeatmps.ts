@@ -29,7 +29,7 @@ const _CheckForNewMaps = async (client: Client, type: string) => {
     if (!event?.RegisteredChannels) return logger.Error("RankedBeatmaps -> event is unexpected value ->", event)
 
     const channelData = await Promise.all(event.RegisteredChannels.map(async (data) => [client.channels.cache.get(data.id) || await client.channels.fetch(data.id), data.mode]))
-    const lastCheckDate = new Date("2022-05-13T00:45:20+00:00")//new Date(event.LastChecked)
+    const lastCheckDate = new Date(event.LastChecked)
 
     const [search, err] = await HandlePromise<Beatmaps.Sets.Search>(OsuApi.Beatmap.Search({ mode: 0, type: type }))
     if (err) return console.error(err)
